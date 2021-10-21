@@ -6,17 +6,51 @@ public class Program
 
     static void Main(string[] args)
     {
-        //new Program();
-        W03Main();
+        new Program();
     }
 
     public Program()
     {
         //Console.WriteLine("");
-        W02T04();
+        W03T03();
     }
 
     #region W03
+
+    public void W03T03()
+    {
+        int[] thread1Result = new int[10];
+        int[] thread2Result = new int[10];
+        int[] thread3Result = new int[10];
+        Thread thread1 = new Thread(new ThreadStart(() => W03T03Fibonacci(1, 1, 0, thread1Result)));
+        Thread thread2 = new Thread(new ThreadStart(() => W03T03Fibonacci(89, 144, 0, thread2Result)));
+        Thread thread3 = new Thread(new ThreadStart(() => W03T03Fibonacci(10946, 17711, 0, thread3Result)));
+        thread1.Start();
+        thread2.Start();
+        thread3.Start();
+        if (thread1.IsAlive)
+            thread1.Join();
+        if (thread2.IsAlive)
+            thread2.Join();
+        if (thread3.IsAlive)
+            thread3.Join();
+        for (int i = 0; i < 10; i++)
+            Console.Write(thread1Result[i] + ", ");
+        for (int i = 0; i < 10; i++)
+            Console.Write(thread2Result[i] + ", ");
+        for (int i = 0; i < 10; i++)
+            Console.Write(thread3Result[i] + ", ");
+        Console.WriteLine();
+        Console.ReadLine();
+    }
+
+    public void W03T03Fibonacci(int first, int second, int pos, int[] result)
+    {
+        if (pos == 10)
+            return;
+        result[pos] = first;
+        W03T03Fibonacci(second, first + second, pos + 1, result);
+    }
 
     public static void W03Sort(int[] SortNumbers, int count)
     {
@@ -118,4 +152,5 @@ public class Program
     }
 
     #endregion
+
 }
