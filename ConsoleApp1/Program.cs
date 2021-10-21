@@ -64,12 +64,9 @@ public class Program
         W03ToScreen(Numbers1);
         W03ToScreen(Numbers2);
         W03ToScreen(Numbers3);
-        Thread Thread1 = new Thread(new ThreadStart(() => W03Sort(Numbers1, 1)));
-        Thread Thread2 = new Thread(new ThreadStart(() => W03Sort(Numbers2, 2)));
-        Thread Thread3 = new Thread(new ThreadStart(() => W03Sort(Numbers3, 3)));
-        Thread1.Start();
-        Thread2.Start();
-        Thread3.Start();
+        W03Sort(Numbers1, 1);
+        W03Sort(Numbers2, 2);
+        W03Sort(Numbers3, 3);
         Console.WriteLine("Sorted Lists Are:");
         Console.WriteLine();
         W03ToScreen(Numbers1);
