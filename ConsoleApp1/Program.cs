@@ -28,10 +28,10 @@ public class Program
             {
                 if (SortNumbers[j] < SortNumbers[smallest])
                     smallest = j;
-                temp = SortNumbers[smallest];
-                SortNumbers[smallest] = SortNumbers[i];
-                SortNumbers[i] = temp;
             }
+            temp = SortNumbers[smallest];
+            SortNumbers[smallest] = SortNumbers[i];
+            SortNumbers[i] = temp;
         }
         Console.WriteLine("Sorted " + count);
     }
