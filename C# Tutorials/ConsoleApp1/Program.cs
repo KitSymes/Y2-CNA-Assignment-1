@@ -12,8 +12,59 @@ public class Program
     public Program()
     {
         //Console.WriteLine("");
-        W03T03();
+        W04T03();
     }
+
+    #region W04
+
+    public void W04T03()
+    {
+        Semaphore sem = new Semaphore(0, 2);
+        ConsoleApp1.W04.Bowl spag = new ConsoleApp1.W04.Bowl(sem);
+        for (int i = 0; i < 5; i++)
+        {
+            Thread philosopher = new Thread(new ParameterizedThreadStart(spag.Eat));
+            philosopher.Start(i);
+        }
+        Thread.Sleep(500);
+        sem.Release(2);
+        Console.ReadLine();
+    }
+
+    public void W04T02()
+    {
+        int num = 0, count = 10;
+        Thread[] threads = new Thread[count];
+        for (int i = 0; i < count; i++)
+            threads[i] = new Thread(new ParameterizedThreadStart((Object pr) =>
+            {
+                lock (pr)
+                {
+                    int newNum = num;
+                    newNum++;
+                    Console.WriteLine(newNum);
+                    num = newNum;
+                    Monitor.Pulse(pr);
+                }
+            }));
+        for (int i = 0; i < count; i++)
+            threads[i].Start(this);
+        Console.ReadLine();
+    }
+
+    public void W04T01()
+    {
+        ConsoleApp1.W04.Buffer buff = new ConsoleApp1.W04.Buffer();
+        ConsoleApp1.W04.Producer prod = new ConsoleApp1.W04.Producer(buff);
+        ConsoleApp1.W04.Consumer con = new ConsoleApp1.W04.Consumer(buff);
+
+        Thread producerThread = new Thread(new ThreadStart(prod.Production));
+        Thread consumerThread = new Thread(new ThreadStart(con.Consumption));
+        producerThread.Start();
+        consumerThread.Start();
+    }
+
+    #endregion
 
     #region W03
 
@@ -109,7 +160,6 @@ public class Program
     }
 
     #endregion
-
 
     #region W02
 
