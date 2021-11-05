@@ -5,37 +5,59 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:WpfApp1"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="Harmony" Height="450" Width="800">
+    <Window.Resources>
+        <SolidColorBrush x:Key="ToolbarTextColour" Color="#FFB4B4B4"/>
+        <SolidColorBrush x:Key="MainPanelTextColour" Color="White"/>
+        <!--Toolbar-->
+        <Style x:Key="ToolbarLabelStyle" TargetType="Label">
+            <Setter Property="Foreground" Value="{StaticResource ToolbarTextColour}"/>
+        </Style>
+        <Style x:Key="ToolbarButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource ToolbarTextColour}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource ToolbarTextColour}"/>
+        </Style>
+        <Style x:Key="ToolbarTextBoxStyle" TargetType="TextBox">
+            <Setter Property="Foreground" Value="{StaticResource ToolbarTextColour}"/>
+            <Setter Property="Background" Value="{x:Null}"/>
+            <Setter Property="BorderBrush" Value="{x:Null}"/>
+            <Setter Property="CaretBrush" Value="{StaticResource ToolbarTextColour}"/>
+        </Style>
+
+        <!--Main-->
+        <Style x:Key="MainTextBoxStyle" TargetType="TextBox">
+            <Setter Property="Foreground" Value="{StaticResource MainPanelTextColour}"/>
+            <Setter Property="Background" Value="#40444B"/>
+            <Setter Property="BorderBrush" Value="{x:Null}"/>
+        </Style>
+        <Style x:Key="MainTextBlockStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource MainPanelTextColour}"/>
+            <Setter Property="Background" Value="#36393F"/>
+        </Style>
+
+        <!--Sidebar-->
+    </Window.Resources>
     <Grid Background="#FF2F3037">
         <DockPanel VerticalAlignment="Top">
             <ToolBar Background="#FF151619">
-                <ToolBar.Resources>
-                    <Style TargetType="Label">
-                        <Setter Property="Foreground" Value="#FFB4B4B4"/>
-                    </Style>
-                    <Style TargetType="TextBox">
-                        <Setter Property="Foreground" Value="#FFB4B4B4"/>
-                        <Setter Property="Background" Value="{x:Null}"/>
-                    </Style>
-                </ToolBar.Resources>
-                <Label Content="IP:"/>
-                <TextBox HorizontalAlignment="Left" Text="127.0.0.1" TextWrapping="NoWrap" Width="80" MaxLines="1"/>
-                <Label Content="Port:"/>
-                <TextBox HorizontalAlignment="Left" Text="25565" TextWrapping="NoWrap" Width="45" MaxLength="5" MaxLines="1"/>
-                <Button Content="Connect" Click="Connect_Button_Click" />
+                <Label Content="IP:" Style="{DynamicResource ToolbarLabelStyle}"/>
+                <TextBox x:Name="IPAddressInput" HorizontalAlignment="Left" Text="127.0.0.1" TextWrapping="NoWrap" Width="80" MaxLines="1" Style="{DynamicResource ToolbarTextBoxStyle}"/>
+                <Label Content="Port:" Style="{DynamicResource ToolbarLabelStyle}"/>
+                <TextBox x:Name="PortInput" HorizontalAlignment="Left" Text="25565" TextWrapping="NoWrap" Width="45" MaxLength="5" MaxLines="1" Style="{DynamicResource ToolbarTextBoxStyle}"/>
+                <Button Content="Connect" Click="Connect_Button_Click" Style="{DynamicResource ToolbarButtonStyle}" />
                 <Separator/>
-                <Label Content="Name:"/>
-                <TextBox HorizontalAlignment="Left" Text="John Doe" TextWrapping="NoWrap" Width="80" MaxLines="1"/>
+                <Label Content="Name:" Style="{DynamicResource ToolbarLabelStyle}"/>
+                <TextBox x:Name="UserNameInput" HorizontalAlignment="Left" Text="John Doe" TextWrapping="NoWrap" Width="80" MaxLines="1" Style="{DynamicResource ToolbarTextBoxStyle}"/>
                 <Label x:Name="UserUUIDBox" Content="UUID: " FontStyle="Italic" Foreground="Gray" HorizontalAlignment="Right"/>
             </ToolBar>
         </DockPanel>
-        <ScrollViewer Margin="0,0,10,50" Width="600" Height="300" HorizontalAlignment="Right" VerticalAlignment="Bottom" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
-            <TextBlock Background="#FF35383E">
+        <ScrollViewer x:Name="CurrentChannelScroll"  Margin="0,0,10,50" Width="600" Height="300" HorizontalAlignment="Right" VerticalAlignment="Bottom" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch">
+            <TextBlock x:Name="CurrentChannelText" Style="{DynamicResource MainTextBlockStyle}">
 
             </TextBlock>
         </ScrollViewer>
-        <TextBox HorizontalAlignment="Right" Height="30" Margin="0,0,10,10" VerticalAlignment="Bottom" Width="600" MaxLines="1" TextWrapping="Wrap">
-
+        <TextBox x:Name="InputMessageBox" HorizontalAlignment="Right" Height="30" Margin="0,0,10,10" VerticalAlignment="Bottom" Width="600" MaxLines="1" TextWrapping="Wrap" Style="{DynamicResource MainTextBoxStyle}" VerticalContentAlignment="Center" KeyDown="InputMessageBox_KeyDown">
+            
         </TextBox>
 
     </Grid>
