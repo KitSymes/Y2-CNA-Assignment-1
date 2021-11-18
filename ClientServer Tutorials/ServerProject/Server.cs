@@ -1,17 +1,21 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
 using System.IO;
+using System.Collections.Concurrent;
+using System.Threading;
 
 namespace ServerProject
 {
     class Server
     {
         private TcpListener tcpListener;
+        private ConcurrentDictionary<int, ConnectedClient> connectedClients;
+        bool ready = false;
+        bool p1 = false, p2 = false;
+        bool p1done = false, p2done = false;
+        string p1choice, p2choice;
 
         public Server(string ipAddress, int port)
         {
@@ -25,9 +29,27 @@ namespace ServerProject
 
             Console.WriteLine("Server is Listening");
 
-            Socket socket = tcpListener.AcceptSocket();
-            Console.WriteLine("Connection Made");
-            ClientMethod(socket);
+            connectedClients = new();
+            int clientIndex = 0;
+
+            while (clientIndex < 2)
+            {
+                Socket socket = tcpListener.AcceptSocket();
+
+                Console.WriteLine("Connection Made");
+
+                int index = clientIndex;
+                connectedClients.TryAdd(index, new(socket));
+                clientIndex++;
+
+                Thread thread = new Thread(() => { RPS(index); });
+                thread.Start();
+            }
+            ready = true;
+            while (!p1done || !p2done)
+            {
+                Thread.Sleep(1000);
+            }
         }
 
         public void Stop()
@@ -35,32 +57,137 @@ namespace ServerProject
             tcpListener.Stop();
         }
 
-        private void ClientMethod(Socket socket)
+        private void ClientMethod(int index)
         {
             string receivedMessage;
-            NetworkStream stream = new(socket);
-            StreamReader reader = new(stream, Encoding.UTF8);
-            StreamWriter writer = new(stream, Encoding.UTF8);
+            ConnectedClient client = connectedClients[index];
 
-            writer.WriteLine("Hello!! Enter 0 for options!");
-            writer.Flush();
+            client.Send("Hello!! Enter 0 for options!");
 
-            while ((receivedMessage = reader.ReadLine()) != null)
+            while ((receivedMessage = client.Read()) != null)
             {
-                writer.WriteLine(GetReturnMessage(receivedMessage));
-                writer.Flush();
+                client.Send(GetReturnMessage(receivedMessage));
                 if (receivedMessage.ToLower() == "exit")
                     break;
             }
 
-            reader.Close();
-            writer.Close();
-            socket.Close();
+            client.Close();
+            connectedClients.TryRemove(index, out client);
+        }
+
+        private void RPS(int index)
+        {
+            string receivedMessage;
+            ConnectedClient client = connectedClients[index];
+
+            bool isP1 = index == 0;
+
+            client.Send("Hello!! Waiting for another player...!");
+
+            while (!ready)
+            {
+                Thread.Sleep(100);
+            }
+
+            client.Send("Get ready!");
+            Thread.Sleep(1000);
+            client.Send("3!");
+            Thread.Sleep(1000);
+            client.Send("2!");
+            Thread.Sleep(1000);
+            client.Send("1!");
+            Thread.Sleep(1000);
+            client.Send("Rock/Paper/Scissors!");
+            client.Send("input");
+
+            while ((receivedMessage = client.Read()) != null)
+            {
+                if (receivedMessage.ToLower() == "rock" ||
+                    receivedMessage.ToLower() == "paper" ||
+                    receivedMessage.ToLower() == "scissors")
+                {
+                    if (isP1)
+                        p1choice = receivedMessage.ToLower();
+                    else
+                        p2choice = receivedMessage.ToLower();
+
+                    break;
+                }
+                client.Send("Invalid!");
+            }
+
+            client.Send("ok");
+            client.Send("Waiting for opponent...");
+
+            if (isP1)
+                p1 = true;
+            else
+                p2 = true;
+
+            while (!p1 || !p2)
+            {
+                Thread.Sleep(100);
+            }
+
+
+            if (p1choice == "rock")
+            {
+                if (p2choice == "rock")
+                {
+                    client.Send("You drew!");
+                } else if (p2choice == "paper")
+                {
+                    client.Send("You " + (!isP1 ? "won" : "lost") + "!");
+                }
+                else if (p2choice == "scissors")
+                {
+                    client.Send("You " + (isP1 ? "won" : "lost") + "!");
+                }
+            } else if (p1choice == "paper")
+            {
+                if (p2choice == "rock")
+                {
+                    client.Send("You " + (isP1 ? "won" : "lost") + "!");
+                }
+                else if (p2choice == "paper")
+                {
+                    client.Send("You drew!");
+                }
+                else if (p2choice == "scissors")
+                {
+                    client.Send("You " + (!isP1 ? "won" : "lost") + "!");
+                }
+            }
+            else if (p1choice == "scissors")
+            {
+                if (p2choice == "rock")
+                {
+                    client.Send("You " + (!isP1 ? "won" : "lost") + "!");
+                }
+                else if (p2choice == "paper")
+                {
+                    client.Send("You " + (isP1 ? "won" : "lost") + "!");
+                }
+                else if (p2choice == "scissors")
+                {
+                    client.Send("You drew!");
+                }
+            }
+
+            client.Send("exit");
+
+            if (isP1)
+                p1done = true;
+            else
+                p2done = true;
+
+            client.Close();
+            connectedClients.TryRemove(index, out _);
         }
 
         private string GetReturnMessage(string code)
         {
-            switch(code.ToLower())
+            switch (code.ToLower())
             {
                 case "hi":
                     return "Hello";

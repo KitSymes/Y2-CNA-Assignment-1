@@ -43,6 +43,7 @@ namespace ClientProject
         {
             string input;
             ProcessServerResponse();
+
             while ((input = Console.ReadLine()) != null)
             {
                 writer.WriteLine(input);
@@ -50,6 +51,50 @@ namespace ClientProject
                 if (input.ToLower() == "exit")
                     break;
                 ProcessServerResponse();
+            }
+
+            reader.Close();
+            writer.Close();
+            stream.Close();
+            tcpClient.Close();
+        }
+
+        public void RPS()
+        {
+            string input;
+
+
+            while ((input = reader.ReadLine()) != null)
+            {
+                if (input == "input")
+                    break;
+
+                Console.WriteLine("Server: " + input);
+                Console.WriteLine();
+            }
+
+            writer.WriteLine(Console.ReadLine());
+            writer.Flush();
+
+            while ((input = reader.ReadLine()) != null)
+            {
+                if (input == "ok")
+                    break;
+
+                Console.WriteLine("Server: " + input);
+                Console.WriteLine();
+
+                writer.WriteLine(Console.ReadLine());
+                writer.Flush();
+            }
+
+            while ((input = reader.ReadLine()) != null)
+            {
+                if (input == "exit")
+                    break;
+
+                Console.WriteLine("Server: " + input);
+                Console.WriteLine();
             }
 
             reader.Close();

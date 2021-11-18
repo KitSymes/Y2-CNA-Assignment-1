@@ -9,7 +9,7 @@ namespace ClientProject
             Client client = new();
 
             if (client.Connect("127.0.0.1", 4444))
-                client.Run();
+                client.RPS();
             else
                 Console.WriteLine("Failed to connect to the server");
 
