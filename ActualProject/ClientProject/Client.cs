@@ -6,19 +6,24 @@ using System.Threading.Tasks;
 using System.Net;
 using System.Net.Sockets;
 using System.IO;
+using System.Threading;
 
 namespace ClientProject
 {
-    class Client
+    public class Client
     {
         private TcpClient tcpClient;
         private NetworkStream stream;
         private StreamWriter writer;
         private StreamReader reader;
 
+        private MainWindow form;
+
         public Client()
         {
             tcpClient = new TcpClient();
+            form = new(this);
+            form.ShowDialog();
         }
 
         public bool Connect(string ipAddress, int port)
@@ -41,62 +46,19 @@ namespace ClientProject
 
         public void Run()
         {
-            string input;
-            ProcessServerResponse();
 
-            while ((input = Console.ReadLine()) != null)
+            Thread thread = new(() =>
             {
-                writer.WriteLine(input);
-                writer.Flush();
-                if (input.ToLower() == "exit")
-                    break;
                 ProcessServerResponse();
-            }
+            });
+            thread.Start();
 
-            reader.Close();
-            writer.Close();
-            stream.Close();
-            tcpClient.Close();
         }
 
-        public void RPS()
+        public void Close()
         {
-            string input;
-
-
-            while ((input = reader.ReadLine()) != null)
-            {
-                if (input == "input")
-                    break;
-
-                Console.WriteLine("Server: " + input);
-                Console.WriteLine();
-            }
-
-            writer.WriteLine(Console.ReadLine());
-            writer.Flush();
-
-            while ((input = reader.ReadLine()) != null)
-            {
-                if (input == "ok")
-                    break;
-
-                Console.WriteLine("Server: " + input);
-                Console.WriteLine();
-
-                writer.WriteLine(Console.ReadLine());
-                writer.Flush();
-            }
-
-            while ((input = reader.ReadLine()) != null)
-            {
-                if (input == "exit")
-                    break;
-
-                Console.WriteLine("Server: " + input);
-                Console.WriteLine();
-            }
-
+            if (!tcpClient.Connected)
+                return;
             reader.Close();
             writer.Close();
             stream.Close();
@@ -105,8 +67,26 @@ namespace ClientProject
 
         private void ProcessServerResponse()
         {
-            Console.WriteLine("Server: " + reader.ReadLine());
-            Console.WriteLine();
+            while (tcpClient.Connected)
+            {
+                try
+                {
+                    string input = reader.ReadLine();
+                    form.UpdateChatBox(input);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                }
+            }
+        }
+
+        public void SendMessage(string message)
+        {
+            if (!tcpClient.Connected)
+                return;
+            writer.WriteLine(message);
+            writer.Flush();
         }
     }
 }

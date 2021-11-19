@@ -17,19 +17,22 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 
-namespace WpfApp1
+namespace ClientProject
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
     public partial class MainWindow : Window
     {
-        User u;
-        public MainWindow()
+        private Client client;
+
+        public MainWindow(Client client)
         {
+            this.client = client;
+
             InitializeComponent();
-            u = new();
-            UserUUIDBox.Content += u.GetGuid().ToString();
+
+            //UserUUIDBox.Content += u.GetGuid().ToString();
         }
 
         private void Connect_Button_Click(object sender, RoutedEventArgs e)
@@ -60,6 +63,13 @@ namespace WpfApp1
             }
 
             // TODO
+            if (client.Connect(IPAddressInput.Text, int.Parse(PortInput.Text)))
+            {
+                client.Run();
+            } else
+            {
+                MessageBox.Show("An error occured when connecting.", "Warning");
+            }
         }
 
         private void InputMessageBox_KeyDown(object sender, KeyEventArgs e)
@@ -70,15 +80,22 @@ namespace WpfApp1
                     return;
                 string msg = UserNameInput.Text + ": " + InputMessageBox.Text;
                 InputMessageBox.Clear();
-                new Thread(() => { Dispatcher.Invoke(DispatcherPriority.Normal, new Action<string>(SendMessage), msg); }).Start();
+                client.SendMessage(msg);
             }
         }
 
-        private void SendMessage(string message)
+        /// <summary>
+        /// Update the client's message box with a new message
+        /// </summary>
+        /// <param name="message">The message to append</param>
+        public void UpdateChatBox(string message)
         {
-            CurrentChannelText.Text += (CurrentChannelText.Text.Length == 0 ? "" : "\r\n") + message;
-            if (CurrentChannelScroll.VerticalOffset == CurrentChannelScroll.ScrollableHeight)
-                CurrentChannelScroll.ScrollToEnd();
+            CurrentChannelText.Dispatcher.Invoke(() =>
+            {
+                CurrentChannelText.Text += (CurrentChannelText.Text.Length == 0 ? "" : "\r\n") + message;
+                if (CurrentChannelScroll.VerticalOffset == CurrentChannelScroll.ScrollableHeight)
+                    CurrentChannelScroll.ScrollToEnd();
+            });
         }
     }
 }
