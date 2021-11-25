@@ -46,7 +46,7 @@
                 <Label Content="IP:" Style="{DynamicResource ToolbarLabelStyle}"/>
                 <TextBox x:Name="IPAddressInput" HorizontalAlignment="Left" Text="127.0.0.1" TextWrapping="NoWrap" Width="80" MaxLines="1" Style="{DynamicResource ToolbarTextBoxStyle}"/>
                 <Label Content="Port:" Style="{DynamicResource ToolbarLabelStyle}"/>
-                <TextBox x:Name="PortInput" HorizontalAlignment="Left" Text="25565" TextWrapping="NoWrap" Width="45" MaxLength="5" MaxLines="1" Style="{DynamicResource ToolbarTextBoxStyle}"/>
+                <TextBox x:Name="PortInput" HorizontalAlignment="Left" Text="4444" TextWrapping="NoWrap" Width="45" MaxLength="5" MaxLines="1" Style="{DynamicResource ToolbarTextBoxStyle}"/>
                 <Button Content="Connect" Click="Connect_Button_Click" Style="{DynamicResource ToolbarButtonStyle}" />
                 <Separator/>
                 <Label Content="Name:" Style="{DynamicResource ToolbarLabelStyle}"/>

@@ -1,8 +1,9 @@
 ﻿using System;
-using System.Net;
 using System.Net.Sockets;
 using System.IO;
 using System.Text;
+using System.Runtime.Serialization.Formatters.Binary;
+using Packets;
 
 namespace ServerProject
 {
@@ -10,10 +11,15 @@ namespace ServerProject
     {
         private Socket socket;
         private NetworkStream stream;
-        private StreamReader reader;
-        private StreamWriter writer;
+        private BinaryReader reader;
+        private BinaryWriter writer;
+        private BinaryFormatter formatter;
         private Object readLock;
         private Object writeLock;
+
+        public bool ready = false;
+        public Guid guid;
+        public string nickname;
 
         public ConnectedClient(Socket socket)
         {
@@ -23,6 +29,7 @@ namespace ServerProject
             this.socket = socket;
 
             stream = new(socket);
+            formatter = new();
             reader = new(stream, Encoding.UTF8);
             writer = new(stream, Encoding.UTF8);
         }
@@ -35,19 +42,30 @@ namespace ServerProject
             socket.Close();
         }
 
-        public string Read()
+        public Packet Read()
         {
             lock (readLock)
             {
-                return reader.ReadLine();
+                int numberOfBytes;
+                if ((numberOfBytes = reader.ReadInt32()) != -1)
+                {
+                    byte[] buffer = reader.ReadBytes(numberOfBytes);
+                    MemoryStream ms = new(buffer);
+                    return formatter.Deserialize(ms) as Packet;
+                }
+                return null;
             }
         }
 
-        public void Send(string message)
+        public void Send(Packet message)
         {
             lock (writeLock)
             {
-                writer.WriteLine(message);
+                MemoryStream ms = new();
+                formatter.Serialize(ms, message);
+                byte[] buffer = ms.GetBuffer();
+                writer.Write(buffer.Length);
+                writer.Write(buffer);
                 writer.Flush();
             }
         }

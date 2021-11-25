@@ -1,21 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Text.RegularExpressions;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using System.Windows.Threading;
+using Packets;
 
 namespace ClientProject
 {
@@ -25,6 +11,7 @@ namespace ClientProject
     public partial class MainWindow : Window
     {
         private Client client;
+        private ChatChannel currentlyWatched;
 
         public MainWindow(Client client)
         {
@@ -32,7 +19,10 @@ namespace ClientProject
 
             InitializeComponent();
 
-            //UserUUIDBox.Content += u.GetGuid().ToString();
+            UserUUIDBox.Content += client.guid.ToString();
+            client.name = UserNameInput.Text;
+            currentlyWatched = client.mainChannel;
+            currentlyWatched.watched = true;
         }
 
         private void Connect_Button_Click(object sender, RoutedEventArgs e)
@@ -66,7 +56,9 @@ namespace ClientProject
             if (client.Connect(IPAddressInput.Text, int.Parse(PortInput.Text)))
             {
                 client.Run();
-            } else
+                client.Send(new ClientJoinPacket(client.guid, client.name));
+            }
+            else
             {
                 MessageBox.Show("An error occured when connecting.", "Warning");
             }
@@ -78,9 +70,9 @@ namespace ClientProject
             {
                 if (InputMessageBox.Text.Length == 0)
                     return;
-                string msg = UserNameInput.Text + ": " + InputMessageBox.Text;
+                string msg = InputMessageBox.Text;
                 InputMessageBox.Clear();
-                client.SendMessage(msg);
+                client.Send(new ChatMessagePacket(msg));
             }
         }
 
@@ -88,12 +80,13 @@ namespace ClientProject
         /// Update the client's message box with a new message
         /// </summary>
         /// <param name="message">The message to append</param>
-        public void UpdateChatBox(string message)
+        public void UpdateChatBox(string channel)
         {
             CurrentChannelText.Dispatcher.Invoke(() =>
             {
-                CurrentChannelText.Text += (CurrentChannelText.Text.Length == 0 ? "" : "\r\n") + message;
-                if (CurrentChannelScroll.VerticalOffset == CurrentChannelScroll.ScrollableHeight)
+                bool wasAtMax = CurrentChannelScroll.VerticalOffset == CurrentChannelScroll.ScrollableHeight;
+                CurrentChannelText.Text = channel;
+                if (wasAtMax)
                     CurrentChannelScroll.ScrollToEnd();
             });
         }

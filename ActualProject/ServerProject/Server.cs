@@ -1,10 +1,9 @@
 ﻿using System;
-using System.Text;
 using System.Net;
 using System.Net.Sockets;
-using System.IO;
 using System.Collections.Concurrent;
 using System.Threading;
+using Packets;
 
 namespace ServerProject
 {
@@ -12,6 +11,7 @@ namespace ServerProject
     {
         private TcpListener tcpListener;
         private ConcurrentDictionary<int, ConnectedClient> connectedClients;
+        private ConcurrentDictionary<Guid, ConnectedClient> clientsByID;
 
         public Server(string ipAddress, int port)
         {
@@ -26,6 +26,7 @@ namespace ServerProject
             Console.WriteLine("Server is Listening");
 
             connectedClients = new();
+            clientsByID = new();
             int clientIndex = 0;
 
             while (true)
@@ -50,15 +51,38 @@ namespace ServerProject
 
         private void ClientMethod(int index)
         {
-            string receivedMessage;
+            Packet receivedMessage;
             ConnectedClient client = connectedClients[index];
 
-            client.Send("Connected!");
+            // TODO send user list
 
             while ((receivedMessage = client.Read()) != null)
             {
-                foreach (ConnectedClient c in connectedClients.Values)
-                    c.Send(receivedMessage);
+                if (!client.ready)
+                {
+                    if (receivedMessage.PacketType == PacketType.CLIENT_JOIN)
+                    {
+                        ClientJoinPacket packet = (ClientJoinPacket)receivedMessage;
+                        if (clientsByID.ContainsKey(packet._guid))
+                            continue;
+                        clientsByID.TryAdd(packet._guid, client);
+                        client.nickname = packet._name;
+                        client.ready = true;
+                    }
+                    continue;
+                }
+
+                switch (receivedMessage.PacketType)
+                {
+                    case PacketType.CHAT_MESSAGE:
+                        ChatMessagePacket packet = (ChatMessagePacket)receivedMessage;
+                        foreach (ConnectedClient c in connectedClients.Values)
+                            if (c.ready)
+                                c.Send(new ChatMessageReceivedPacket(packet.message, client.guid));
+                        break;
+                    default:
+                        break;
+                }
             }
 
             client.Close();

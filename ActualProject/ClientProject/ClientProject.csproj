@@ -7,6 +7,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <ProjectReference Include="..\Packets\Packets.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<None Update="MainWindow.xaml">
 			<Generator>MSBuild:Compile</Generator>
 		</None>
