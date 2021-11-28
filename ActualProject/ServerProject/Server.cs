@@ -65,9 +65,17 @@ namespace ServerProject
                         ClientJoinPacket packet = (ClientJoinPacket)receivedMessage;
                         if (clientsByID.ContainsKey(packet._guid))
                             continue;
+
+                        foreach (ConnectedClient cl in clientsByID.Values)
+                            client.Send(new ClientJoinPacket(cl.guid, cl.nickname));
+
                         clientsByID.TryAdd(packet._guid, client);
+                        client.guid = packet._guid;
                         client.nickname = packet._name;
                         client.ready = true;
+
+                        foreach (ConnectedClient cl in clientsByID.Values)
+                            cl.Send(packet);
                     }
                     continue;
                 }
@@ -75,10 +83,16 @@ namespace ServerProject
                 switch (receivedMessage.PacketType)
                 {
                     case PacketType.CHAT_MESSAGE:
-                        ChatMessagePacket packet = (ChatMessagePacket)receivedMessage;
-                        foreach (ConnectedClient c in connectedClients.Values)
+                        ChatMessagePacket chatPacket = (ChatMessagePacket)receivedMessage;
+                        foreach (ConnectedClient c in clientsByID.Values)
                             if (c.ready)
-                                c.Send(new ChatMessageReceivedPacket(packet.message, client.guid));
+                                c.Send(new ChatMessageReceivedPacket(chatPacket.message, client.guid));
+                        break;
+                    case PacketType.CLIENT_NAME_UPDATE:
+                        ClientNameChangePacket nameChangePacket = (ClientNameChangePacket)receivedMessage;
+                        client.nickname = nameChangePacket._name;
+                        foreach (ConnectedClient cl in clientsByID.Values)
+                            cl.Send(new ClientNameChangeReceivedPacket(client.guid, nameChangePacket._name));
                         break;
                     default:
                         break;
@@ -86,7 +100,11 @@ namespace ServerProject
             }
 
             client.Close();
-            connectedClients.TryRemove(index, out client);
+            ConnectedClient clientOut;
+            connectedClients.TryRemove(index, out clientOut);
+            clientsByID.TryRemove(client.guid, out clientOut);
+            foreach (ConnectedClient c in clientsByID.Values)
+                c.Send(new ClientLeftPacket(client.guid));
         }
     }
 }

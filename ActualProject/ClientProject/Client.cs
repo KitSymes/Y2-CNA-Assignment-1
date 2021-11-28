@@ -97,18 +97,35 @@ namespace ClientProject
                     Packet receivedMessage = Read();
                     switch (receivedMessage.PacketType)
                     {
-                        case PacketType.CHAT_MESSAGE_RECEIVED:
-                            ChatMessageReceivedPacket packet = (ChatMessageReceivedPacket)receivedMessage;
-                            if (clients.ContainsKey(packet.from))
+                        case PacketType.CLIENT_JOIN:
+                            ClientJoinPacket joinPacket = (ClientJoinPacket)receivedMessage;
+                            OtherClient otherClient = new OtherClient(joinPacket._guid, joinPacket._name, joinPacket._guid == guid);
+                            clients.TryAdd(joinPacket._guid, otherClient);
+                            form.AddClient(otherClient);
+                            mainChannel.Add(joinPacket._name + " has joined.");
+                            form.UpdateChatBox(mainChannel.Format());
+                            break;
+                        case PacketType.CLIENT_NAME_UPDATE_RECEIVED:
+                            ClientNameChangeReceivedPacket nameChangePacket = (ClientNameChangeReceivedPacket)receivedMessage;
+                            if (clients.ContainsKey(nameChangePacket._guid))
                             {
-                                mainChannel.Add(clients[packet.from].name + ": " + packet.message);
+                                mainChannel.Add(clients[nameChangePacket._guid].name + " has changed their name to " + nameChangePacket._name + ".");
+                                clients[nameChangePacket._guid].ChangeName(nameChangePacket._name, form);
+                            }
+                            break;
+                        case PacketType.CHAT_MESSAGE_RECEIVED:
+                            ChatMessageReceivedPacket messagePacket = (ChatMessageReceivedPacket)receivedMessage;
+                            if (clients.ContainsKey(messagePacket.from))
+                            {
+                                mainChannel.Add(clients[messagePacket.from].name + ": " + messagePacket.message);
                                 if (mainChannel.watched)
                                 {
                                     form.UpdateChatBox(mainChannel.Format());
                                 }
-                            } else
+                            }
+                            else
                             {
-                                mainChannel.Add("???: " + packet.message);
+                                mainChannel.Add("???: " + messagePacket.message);
                                 if (mainChannel.watched)
                                 {
                                     form.UpdateChatBox(mainChannel.Format());

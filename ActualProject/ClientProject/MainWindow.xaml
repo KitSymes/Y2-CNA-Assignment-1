@@ -9,6 +9,10 @@
     <Window.Resources>
         <SolidColorBrush x:Key="ToolbarTextColour" Color="#FFB4B4B4"/>
         <SolidColorBrush x:Key="MainPanelTextColour" Color="White"/>
+        <SolidColorBrush x:Key="DarkBackground" Color="#FF151619"/>
+        <SolidColorBrush x:Key="MainBackground" Color="#FF2F3037"/>
+        <SolidColorBrush x:Key="LightBackground" Color="#FF40444B"/>
+        <SolidColorBrush x:Key="ChatBackground" Color="#FF36393F"/>
         <!--Toolbar-->
         <Style x:Key="ToolbarLabelStyle" TargetType="Label">
             <Setter Property="Foreground" Value="{StaticResource ToolbarTextColour}"/>
@@ -30,19 +34,35 @@
         <!--Main-->
         <Style x:Key="MainTextBoxStyle" TargetType="TextBox">
             <Setter Property="Foreground" Value="{StaticResource MainPanelTextColour}"/>
-            <Setter Property="Background" Value="#40444B"/>
+            <Setter Property="Background" Value="{DynamicResource LightBackground}"/>
             <Setter Property="BorderBrush" Value="{x:Null}"/>
         </Style>
         <Style x:Key="MainTextBlockStyle" TargetType="TextBlock">
             <Setter Property="Foreground" Value="{StaticResource MainPanelTextColour}"/>
-            <Setter Property="Background" Value="#36393F"/>
+            <Setter Property="Background" Value="{DynamicResource ChatBackground}"/>
         </Style>
 
         <!--Sidebar-->
+        <Style x:Key="SidebarLabelStyle" TargetType="Label">
+            <Setter Property="Foreground" Value="{StaticResource ToolbarTextColour}"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        </Style>
+        <Style x:Key="SidebarButtonStyle" TargetType="Button">
+            <Setter Property="Foreground" Value="{StaticResource ToolbarTextColour}"/>
+            <Setter Property="Background" Value="{x:Null}"/>
+            <Setter Property="BorderBrush" Value="{x:Null}"/>
+            <Setter Property="Width" Value="100"/>
+            <Setter Property="Height" Value="20"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        </Style>
     </Window.Resources>
-    <Grid Background="#FF2F3037">
+    <Grid Background="{DynamicResource MainBackground}">
+        <StackPanel x:Name="userList" HorizontalAlignment="Left" Height="428" VerticalAlignment="Top" Width="100" Background="{DynamicResource DarkBackground}" Margin="0,1,0,0">
+            <Label Height="29"/>
+            <Label Content="User List" Height="30" Style="{DynamicResource SidebarLabelStyle}"/>
+        </StackPanel>
         <DockPanel VerticalAlignment="Top">
-            <ToolBar Background="#FF151619">
+            <ToolBar Background="{DynamicResource DarkBackground}">
                 <Label Content="IP:" Style="{DynamicResource ToolbarLabelStyle}"/>
                 <TextBox x:Name="IPAddressInput" HorizontalAlignment="Left" Text="127.0.0.1" TextWrapping="NoWrap" Width="80" MaxLines="1" Style="{DynamicResource ToolbarTextBoxStyle}"/>
                 <Label Content="Port:" Style="{DynamicResource ToolbarLabelStyle}"/>
@@ -50,7 +70,7 @@
                 <Button Content="Connect" Click="Connect_Button_Click" Style="{DynamicResource ToolbarButtonStyle}" />
                 <Separator/>
                 <Label Content="Name:" Style="{DynamicResource ToolbarLabelStyle}"/>
-                <TextBox x:Name="UserNameInput" HorizontalAlignment="Left" Text="John Doe" TextWrapping="NoWrap" Width="80" MaxLines="1" Style="{DynamicResource ToolbarTextBoxStyle}"/>
+                <TextBox x:Name="UserNameInput" HorizontalAlignment="Left" Text="John Doe" TextWrapping="NoWrap" Width="80" MaxLines="1" Style="{DynamicResource ToolbarTextBoxStyle}" KeyDown="UserNameInput_KeyDown"/>
                 <Label Content="Encrypt:" Style="{DynamicResource ToolbarLabelStyle}"/>
                 <CheckBox x:Name="useEncryptionBox" Style="{DynamicResource ToolbarCheckBoxStyle}"/>
                 <Label x:Name="UserUUIDBox" Content="UUID: " FontStyle="Italic" Foreground="Gray" HorizontalAlignment="Right"/>
@@ -62,7 +82,7 @@
             </TextBlock>
         </ScrollViewer>
         <TextBox x:Name="InputMessageBox" HorizontalAlignment="Right" Height="30" Margin="0,0,10,10" VerticalAlignment="Bottom" Width="600" MaxLines="1" TextWrapping="Wrap" Style="{DynamicResource MainTextBoxStyle}" VerticalContentAlignment="Center" KeyDown="InputMessageBox_KeyDown">
-            
+
         </TextBox>
 
     </Grid>

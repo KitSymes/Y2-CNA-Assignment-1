@@ -1,5 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using Packets;
 
@@ -23,6 +24,41 @@ namespace ClientProject
             client.name = UserNameInput.Text;
             currentlyWatched = client.mainChannel;
             currentlyWatched.watched = true;
+        }
+
+        public void AddClient(OtherClient cl)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                //<Button Content="John Doe" Height="20" Width="80" Style="{DynamicResource SidebarButtonStyle}"/>
+                if (cl.local)
+                {
+                    Label control = new Label();
+                    control.Content = cl.name;
+                    control.Style = (Style)userList.FindResource("SidebarLabelStyle");
+                    userList.Children.Add(control);
+                    cl.label = control;
+                }
+                else
+                {
+                    Button newButton = new Button();
+                    newButton.Content = cl.name;
+                    newButton.Style = (Style)userList.FindResource("SidebarButtonStyle");
+                    userList.Children.Add(newButton);
+                    cl.button = newButton;
+                }
+            });
+        }
+
+        public void RemoveClient(OtherClient cl)
+        {
+            Dispatcher.Invoke(() =>
+            {
+                if (cl.local)
+                    userList.Children.Remove(cl.label);
+                else
+                    userList.Children.Remove(cl.button);
+            });
         }
 
         private void Connect_Button_Click(object sender, RoutedEventArgs e)
@@ -89,6 +125,18 @@ namespace ClientProject
                 if (wasAtMax)
                     CurrentChannelScroll.ScrollToEnd();
             });
+        }
+
+        private void UserNameInput_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                if (UserNameInput.Text.Length == 0)
+                    return;
+                string name = UserNameInput.Text;
+                client.Send(new ClientNameChangePacket(name));
+                client.name = name;
+            }
         }
     }
 }

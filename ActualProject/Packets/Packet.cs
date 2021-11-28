@@ -4,7 +4,8 @@ namespace Packets
 {
     public enum PacketType
     {
-        CLIENT_JOIN, CLIENT_LEAVE, CLIENT_NAME_UPDATE,
+        CLIENT_JOIN, CLIENT_LEAVE,
+        CLIENT_NAME_UPDATE, CLIENT_NAME_UPDATE_RECEIVED,
         CHAT_MESSAGE, CHAT_MESSAGE_RECEIVED,
         PRIVATE_MESSAGE, PRIVATE_MESSAGE_RECEIVED
     }
@@ -30,6 +31,43 @@ namespace Packets
         }
     }
 
+    [Serializable]
+    public class ClientLeftPacket : Packet
+    {
+        public Guid _guid;
+        public ClientLeftPacket(Guid guid)
+        {
+            PacketType = PacketType.CLIENT_JOIN;
+            _guid = guid;
+        }
+    }
+
+    #region Client Name Change
+    [Serializable]
+    public class ClientNameChangePacket : Packet
+    {
+        public string _name;
+        public ClientNameChangePacket(string name)
+        {
+            PacketType = PacketType.CLIENT_NAME_UPDATE;
+            _name = name;
+        }
+    }
+
+    [Serializable]
+    public class ClientNameChangeReceivedPacket : Packet
+    {
+        public Guid _guid;
+        public string _name;
+        public ClientNameChangeReceivedPacket(Guid guid, string name)
+        {
+            PacketType = PacketType.CLIENT_NAME_UPDATE_RECEIVED;
+            _guid = guid;
+            _name = name;
+        }
+    }
+    #endregion
+
     #region Chat Message
     [Serializable]
     public class ChatMessagePacket : Packet
@@ -50,8 +88,8 @@ namespace Packets
         public ChatMessageReceivedPacket(string message, Guid from)
         {
             PacketType = PacketType.CHAT_MESSAGE_RECEIVED;
-            this.message = message;
             this.from = from;
+            this.message = message;
         }
     }
     #endregion
