@@ -103,7 +103,8 @@ namespace ClientProject
                             clients.TryAdd(joinPacket._guid, otherClient);
                             form.AddClient(otherClient);
                             mainChannel.Add(joinPacket._name + " has joined.");
-                            form.UpdateChatBox(mainChannel.Format());
+                            if (mainChannel.watched)
+                                form.UpdateChatBox(mainChannel.Format());
                             break;
                         case PacketType.CLIENT_NAME_UPDATE_RECEIVED:
                             ClientNameChangeReceivedPacket nameChangePacket = (ClientNameChangeReceivedPacket)receivedMessage;
@@ -111,6 +112,8 @@ namespace ClientProject
                             {
                                 mainChannel.Add(clients[nameChangePacket._guid].name + " has changed their name to " + nameChangePacket._name + ".");
                                 clients[nameChangePacket._guid].ChangeName(nameChangePacket._name, form);
+                                if (mainChannel.watched)
+                                    form.UpdateChatBox(mainChannel.Format());
                             }
                             break;
                         case PacketType.CHAT_MESSAGE_RECEIVED:
@@ -119,17 +122,13 @@ namespace ClientProject
                             {
                                 mainChannel.Add(clients[messagePacket.from].name + ": " + messagePacket.message);
                                 if (mainChannel.watched)
-                                {
                                     form.UpdateChatBox(mainChannel.Format());
-                                }
                             }
                             else
                             {
                                 mainChannel.Add("???: " + messagePacket.message);
                                 if (mainChannel.watched)
-                                {
                                     form.UpdateChatBox(mainChannel.Format());
-                                }
                             }
                             break;
                         default:
