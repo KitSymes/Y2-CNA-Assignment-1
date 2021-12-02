@@ -6,9 +6,6 @@ using Packets;
 
 namespace ClientProject
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
         private Client client;
@@ -21,7 +18,7 @@ namespace ClientProject
             InitializeComponent();
 
             UserUUIDBox.Content += client.guid.ToString();
-            client.name = UserNameInput.Text;
+            client.nickname = UserNameInput.Text;
             currentlyWatched = client.mainChannel;
             currentlyWatched.watched = true;
         }
@@ -30,7 +27,6 @@ namespace ClientProject
         {
             Dispatcher.Invoke(() =>
             {
-                //<Button Content="John Doe" Height="20" Width="80" Style="{DynamicResource SidebarButtonStyle}"/>
                 if (cl.local)
                 {
                     Label control = new Label();
@@ -88,11 +84,10 @@ namespace ClientProject
                 return;
             }
 
-            // TODO
             if (client.Connect(IPAddressInput.Text, int.Parse(PortInput.Text)))
             {
                 client.Run();
-                client.Send(new ClientJoinPacket(client.guid, client.name));
+                //client.TCPSend(new ClientJoinPacket(client.guid, client.name));
             }
             else
             {
@@ -108,7 +103,7 @@ namespace ClientProject
                     return;
                 string msg = InputMessageBox.Text;
                 InputMessageBox.Clear();
-                client.Send(new ChatMessagePacket(msg));
+                client.UDPSend(new ChatMessagePacket(msg));
             }
         }
 
@@ -134,8 +129,8 @@ namespace ClientProject
                 if (UserNameInput.Text.Length == 0)
                     return;
                 string name = UserNameInput.Text;
-                client.Send(new ClientNameChangePacket(name));
-                client.name = name;
+                client.TCPSend(new ClientNameChangePacket(name));
+                client.nickname = name;
             }
         }
     }

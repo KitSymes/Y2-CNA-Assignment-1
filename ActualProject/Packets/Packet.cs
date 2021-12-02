@@ -1,10 +1,11 @@
 ﻿using System;
+using System.Net;
 
 namespace Packets
 {
     public enum PacketType
     {
-        CLIENT_JOIN, CLIENT_LEAVE,
+        LOGIN, CLIENT_JOIN, CLIENT_LEAVE,
         CLIENT_NAME_UPDATE, CLIENT_NAME_UPDATE_RECEIVED,
         CHAT_MESSAGE, CHAT_MESSAGE_RECEIVED,
         PRIVATE_MESSAGE, PRIVATE_MESSAGE_RECEIVED
@@ -14,31 +15,45 @@ namespace Packets
     public class Packet
     {
         private PacketType _packetType;
-        public PacketType PacketType { get { return _packetType; } protected set { _packetType = value; } }
+        public PacketType packetType { get { return _packetType; } protected set { _packetType = value; } }
     }
 
+    [Serializable]
+    public class LoginPacket : Packet
+    {
+        public EndPoint endPoint;
+        public Guid guid;
+        public string name;
+        public LoginPacket(EndPoint endPoint, Guid guid, string name)
+        {
+            this.endPoint = endPoint;
+            packetType = PacketType.LOGIN;
+            this.guid = guid;
+            this.name = name;
+        }
+    }
 
     [Serializable]
     public class ClientJoinPacket : Packet
     {
-        public Guid _guid;
-        public string _name;
+        public Guid guid;
+        public string name;
         public ClientJoinPacket(Guid guid, string name)
         {
-            PacketType = PacketType.CLIENT_JOIN;
-            _guid = guid;
-            _name = name;
+            packetType = PacketType.CLIENT_JOIN;
+            this.guid = guid;
+            this.name = name;
         }
     }
 
     [Serializable]
     public class ClientLeftPacket : Packet
     {
-        public Guid _guid;
+        public Guid guid;
         public ClientLeftPacket(Guid guid)
         {
-            PacketType = PacketType.CLIENT_JOIN;
-            _guid = guid;
+            packetType = PacketType.CLIENT_JOIN;
+            this.guid = guid;
         }
     }
 
@@ -46,24 +61,24 @@ namespace Packets
     [Serializable]
     public class ClientNameChangePacket : Packet
     {
-        public string _name;
+        public string name;
         public ClientNameChangePacket(string name)
         {
-            PacketType = PacketType.CLIENT_NAME_UPDATE;
-            _name = name;
+            packetType = PacketType.CLIENT_NAME_UPDATE;
+            this.name = name;
         }
     }
 
     [Serializable]
     public class ClientNameChangeReceivedPacket : Packet
     {
-        public Guid _guid;
-        public string _name;
+        public Guid guid;
+        public string name;
         public ClientNameChangeReceivedPacket(Guid guid, string name)
         {
-            PacketType = PacketType.CLIENT_NAME_UPDATE_RECEIVED;
-            _guid = guid;
-            _name = name;
+            packetType = PacketType.CLIENT_NAME_UPDATE_RECEIVED;
+            this.guid = guid;
+            this.name = name;
         }
     }
     #endregion
@@ -75,7 +90,7 @@ namespace Packets
         public string message;
         public ChatMessagePacket(string message)
         {
-            PacketType = PacketType.CHAT_MESSAGE;
+            packetType = PacketType.CHAT_MESSAGE;
             this.message = message;
         }
     }
@@ -87,7 +102,7 @@ namespace Packets
         public Guid from;
         public ChatMessageReceivedPacket(string message, Guid from)
         {
-            PacketType = PacketType.CHAT_MESSAGE_RECEIVED;
+            packetType = PacketType.CHAT_MESSAGE_RECEIVED;
             this.from = from;
             this.message = message;
         }
@@ -102,7 +117,7 @@ namespace Packets
         public Guid to;
         public PrivateMessagePacket(string message, Guid to)
         {
-            PacketType = PacketType.PRIVATE_MESSAGE;
+            packetType = PacketType.PRIVATE_MESSAGE;
             this.message = message;
             this.to = to;
         }
@@ -115,7 +130,7 @@ namespace Packets
         public Guid from;
         public PrivateMessageReceivedPacket(string message, Guid from)
         {
-            PacketType = PacketType.PRIVATE_MESSAGE_RECEIVED;
+            packetType = PacketType.PRIVATE_MESSAGE_RECEIVED;
             this.message = message;
             this.from = from;
         }

@@ -18,17 +18,19 @@ namespace ClientProject
         private BinaryReader reader;
         private BinaryFormatter formatter;
 
+        private UdpClient udpClient;
+
         private ConcurrentDictionary<Guid, OtherClient> clients;
         public ChatChannel mainChannel;
 
         private MainWindow form;
 
         public Guid guid;
-        public String name;
+        public String nickname;
 
         public Client()
         {
-            tcpClient = new TcpClient();
+            tcpClient = new();
 
             clients = new();
             mainChannel = new();
@@ -48,6 +50,9 @@ namespace ClientProject
                 writer = new(stream);
                 reader = new(stream);
                 formatter = new();
+
+                udpClient = new();
+                udpClient.Connect(ip, port);
                 return true;
             }
             catch (Exception e)
@@ -59,11 +64,17 @@ namespace ClientProject
 
         public void Run()
         {
-            Thread thread = new(() =>
+            Thread tcp = new(() =>
             {
-                ProcessServerResponse();
+                TDPProcessServerResponse();
             });
-            thread.Start();
+            tcp.Start();
+            Thread udp = new(() =>
+            {
+                UDPProcessServerResponse();
+            });
+            udp.Start();
+            Login();
         }
 
         public void Close()
@@ -74,9 +85,51 @@ namespace ClientProject
             writer.Close();
             stream.Close();
             tcpClient.Close();
+            udpClient.Close();
         }
 
-        public Packet Read()
+        public void Login()
+        {
+            TCPSend(new LoginPacket((IPEndPoint)tcpClient.Client.LocalEndPoint, guid, nickname));
+        }
+
+        #region
+        public void UDPSend(Packet packet)
+        {
+            if (udpClient == null)
+                return;
+            MemoryStream ms = new();
+            formatter.Serialize(ms, packet);
+            byte[] buffer = ms.GetBuffer();
+            udpClient.Send(buffer, buffer.Length);
+        }
+
+        private void UDPProcessServerResponse()
+        {
+            try
+            {
+                IPEndPoint endPoint = new(IPAddress.Any, 0);
+                while(true)
+                {
+                    byte[] buffer = udpClient.Receive(ref endPoint);
+                    MemoryStream ms = new(buffer);
+                    Packet packet = formatter.Deserialize(ms) as Packet;
+                    switch (packet.packetType)
+                    {
+                        default:
+                            break;
+                    }
+                }
+            }
+            catch (SocketException e)
+            {
+                Console.WriteLine("Client UDP Read Method Exception: " + e.Message);
+            }
+        }
+        #endregion
+
+        #region TCP
+        public Packet TCPRead()
         {
             int numberOfBytes;
             if ((numberOfBytes = reader.ReadInt32()) != -1)
@@ -88,30 +141,30 @@ namespace ClientProject
             return null;
         }
 
-        private void ProcessServerResponse()
+        private void TDPProcessServerResponse()
         {
             while (tcpClient.Connected)
             {
                 try
                 {
-                    Packet receivedMessage = Read();
-                    switch (receivedMessage.PacketType)
+                    Packet receivedMessage = TCPRead();
+                    switch (receivedMessage.packetType)
                     {
                         case PacketType.CLIENT_JOIN:
                             ClientJoinPacket joinPacket = (ClientJoinPacket)receivedMessage;
-                            OtherClient otherClient = new OtherClient(joinPacket._guid, joinPacket._name, joinPacket._guid == guid);
-                            clients.TryAdd(joinPacket._guid, otherClient);
+                            OtherClient otherClient = new(joinPacket.guid, joinPacket.name, joinPacket.guid == guid);
+                            clients.TryAdd(joinPacket.guid, otherClient);
                             form.AddClient(otherClient);
-                            mainChannel.Add(joinPacket._name + " has joined.");
+                            mainChannel.Add(joinPacket.name + " has joined.");
                             if (mainChannel.watched)
                                 form.UpdateChatBox(mainChannel.Format());
                             break;
                         case PacketType.CLIENT_NAME_UPDATE_RECEIVED:
                             ClientNameChangeReceivedPacket nameChangePacket = (ClientNameChangeReceivedPacket)receivedMessage;
-                            if (clients.ContainsKey(nameChangePacket._guid))
+                            if (clients.ContainsKey(nameChangePacket.guid))
                             {
-                                mainChannel.Add(clients[nameChangePacket._guid].name + " has changed their name to " + nameChangePacket._name + ".");
-                                clients[nameChangePacket._guid].ChangeName(nameChangePacket._name, form);
+                                mainChannel.Add(clients[nameChangePacket.guid].name + " has changed their name to " + nameChangePacket.name + ".");
+                                clients[nameChangePacket.guid].ChangeName(nameChangePacket.name, form);
                                 if (mainChannel.watched)
                                     form.UpdateChatBox(mainChannel.Format());
                             }
@@ -142,16 +195,17 @@ namespace ClientProject
             }
         }
 
-        public void Send(Packet message)
+        public void TCPSend(Packet packet)
         {
             if (!tcpClient.Connected)
                 return;
             MemoryStream ms = new();
-            formatter.Serialize(ms, message);
+            formatter.Serialize(ms, packet);
             byte[] buffer = ms.GetBuffer();
             writer.Write(buffer.Length);
             writer.Write(buffer);
             writer.Flush();
         }
+        #endregion
     }
 }

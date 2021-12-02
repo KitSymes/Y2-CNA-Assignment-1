@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Net.Sockets;
 using System.IO;
 using System.Text;
@@ -16,6 +17,8 @@ namespace ServerProject
         private BinaryFormatter formatter;
         private Object readLock;
         private Object writeLock;
+
+        public IPEndPoint endPoint;
 
         public bool ready = false;
         public Guid guid;
@@ -42,7 +45,7 @@ namespace ServerProject
             socket.Close();
         }
 
-        public Packet Read()
+        public Packet TCPRead()
         {
             lock (readLock)
             {
@@ -57,7 +60,7 @@ namespace ServerProject
             }
         }
 
-        public void Send(Packet message)
+        public void TCPSend(Packet message)
         {
             lock (writeLock)
             {
