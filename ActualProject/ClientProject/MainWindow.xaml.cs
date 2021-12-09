@@ -102,7 +102,10 @@ namespace ClientProject
                     return;
                 string msg = InputMessageBox.Text;
                 InputMessageBox.Clear();
-                client.UDPSend(new ChatMessagePacket(msg));
+                if (useEncryptionBox.IsChecked.Value)
+                    client.UDPSend(new EncryptedChatMessagePacket(client.EncryptString(msg)));
+                else
+                    client.UDPSend(new ChatMessagePacket(msg));
             }
         }
 

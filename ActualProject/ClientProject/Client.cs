@@ -7,6 +7,8 @@ using Packets;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace ClientProject
 {
@@ -20,6 +22,11 @@ namespace ClientProject
 
         private UdpClient udpClient;
 
+        private RSACryptoServiceProvider rsaProvider;
+        private RSAParameters publicKey;
+        private RSAParameters privateKey;
+        private RSAParameters serverKey;
+
         private ConcurrentDictionary<Guid, OtherClient> clients;
         public ChatChannel mainChannel;
 
@@ -31,6 +38,10 @@ namespace ClientProject
         public Client()
         {
             tcpClient = new TcpClient();
+
+            rsaProvider = new RSACryptoServiceProvider(2048);
+            publicKey = rsaProvider.ExportParameters(false);
+            privateKey = rsaProvider.ExportParameters(true);
 
             clients = new ConcurrentDictionary<Guid, OtherClient>();
             mainChannel = new ChatChannel();
@@ -66,7 +77,7 @@ namespace ClientProject
         {
             Thread tcp = new Thread(() =>
             {
-                TDPProcessServerResponse();
+                TCPProcessServerResponse();
             });
             tcp.Start();
             Thread udp = new Thread(() =>
@@ -90,7 +101,7 @@ namespace ClientProject
 
         public void Login()
         {
-            TCPSend(new LoginPacket((IPEndPoint)udpClient.Client.LocalEndPoint, guid, nickname));
+            TCPSend(new LoginPacket((IPEndPoint)udpClient.Client.LocalEndPoint, guid, nickname, publicKey));
         }
 
         private void ProcessPacket(Packet packet)
@@ -105,6 +116,10 @@ namespace ClientProject
                     mainChannel.Add(joinPacket.name + " has joined.");
                     if (mainChannel.watched)
                         form.UpdateChatBox(mainChannel.Format());
+                    break;
+                case PacketType.SERVER_PUBLIC_KEY:
+                    ServerPublicKeyPacket serverPublicKeyPacket = (ServerPublicKeyPacket)packet;
+                    serverKey = serverPublicKeyPacket.publicKey;
                     break;
                 case PacketType.CLIENT_NAME_UPDATE_RECEIVED:
                     ClientNameChangeReceivedPacket nameChangePacket = (ClientNameChangeReceivedPacket)packet;
@@ -131,6 +146,23 @@ namespace ClientProject
                             form.UpdateChatBox(mainChannel.Format());
                     }
                     break;
+                case PacketType.ENCRYPTED_CHAT_MESSAGE_RECEIVED:
+                    EncryptedChatMessageReceivedPacket encryptedMessagePacket = (EncryptedChatMessageReceivedPacket)packet;
+                    string decryptedMessage = DecryptString(encryptedMessagePacket.message);
+                    Guid decryptedGuid = Guid.Parse(DecryptString(encryptedMessagePacket.from));
+                    if (clients.ContainsKey(decryptedGuid))
+                    {
+                        mainChannel.Add(clients[decryptedGuid].name + ": " + decryptedMessage);
+                        if (mainChannel.watched)
+                            form.UpdateChatBox(mainChannel.Format());
+                    }
+                    else
+                    {
+                        mainChannel.Add("???: " + decryptedMessage);
+                        if (mainChannel.watched)
+                            form.UpdateChatBox(mainChannel.Format());
+                    }
+                    break;
                 default:
                     break;
             }
@@ -152,7 +184,7 @@ namespace ClientProject
             try
             {
                 IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
-                while(true)
+                while (true)
                 {
                     byte[] buffer = udpClient.Receive(ref endPoint);
                     MemoryStream ms = new MemoryStream(buffer);
@@ -180,7 +212,7 @@ namespace ClientProject
             return null;
         }
 
-        private void TDPProcessServerResponse()
+        private void TCPProcessServerResponse()
         {
             while (tcpClient.Connected)
             {
@@ -206,6 +238,36 @@ namespace ClientProject
             writer.Write(buffer.Length);
             writer.Write(buffer);
             writer.Flush();
+        }
+        #endregion
+
+        #region Encryption
+        private byte[] Encrypt(byte[] data)
+        {
+            lock (rsaProvider)
+            {
+                rsaProvider.ImportParameters(serverKey);
+                return rsaProvider.Encrypt(data, true);
+            }
+        }
+
+        private byte[] Decrypt(byte[] data)
+        {
+            lock (rsaProvider)
+            {
+                rsaProvider.ImportParameters(privateKey);
+                return rsaProvider.Decrypt(data, true);
+            }
+        }
+
+        public byte[] EncryptString(string message)
+        {
+            return Encrypt(Encoding.UTF8.GetBytes(message));
+        }
+
+        private string DecryptString(byte[] message)
+        {
+            return Encoding.UTF8.GetString(Decrypt(message));
         }
         #endregion
     }

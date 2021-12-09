@@ -5,6 +5,7 @@ using System.IO;
 using System.Text;
 using System.Runtime.Serialization.Formatters.Binary;
 using Packets;
+using System.Security.Cryptography;
 
 namespace ServerProject
 {
@@ -19,6 +20,10 @@ namespace ServerProject
         private Object writeLock;
 
         public IPEndPoint endPoint;
+        private RSACryptoServiceProvider rsaProvider;
+        private RSAParameters publicKey;
+        private RSAParameters privateKey;
+        private RSAParameters clientKey;
 
         public bool ready = false;
         public Guid guid;
@@ -35,6 +40,10 @@ namespace ServerProject
             formatter = new BinaryFormatter();
             reader = new BinaryReader(stream, Encoding.UTF8);
             writer = new BinaryWriter(stream, Encoding.UTF8);
+
+            rsaProvider = new RSACryptoServiceProvider(2048);
+            publicKey = rsaProvider.ExportParameters(false);
+            privateKey = rsaProvider.ExportParameters(true);
         }
 
         public void Close()
@@ -45,6 +54,7 @@ namespace ServerProject
             socket.Close();
         }
 
+        #region TCP
         public Packet TCPRead()
         {
             lock (readLock)
@@ -72,5 +82,46 @@ namespace ServerProject
                 writer.Flush();
             }
         }
+        #endregion
+
+        #region Encryption
+        public void SetClientKey(RSAParameters key)
+        {
+            clientKey = key;
+        }
+
+        public RSAParameters GetPublicKey()
+        {
+            return publicKey;
+        }
+
+        private byte[] Encrypt(byte[] data)
+        {
+            lock(rsaProvider)
+            {
+                rsaProvider.ImportParameters(clientKey);
+                return rsaProvider.Encrypt(data, true);
+            }
+        }
+
+        private byte[] Decrypt(byte[] data)
+        {
+            lock (rsaProvider)
+            {
+                rsaProvider.ImportParameters(privateKey);
+                return rsaProvider.Decrypt(data, true);
+            }
+        }
+
+        public byte[] EncryptString(string message)
+        {
+            return Encrypt(Encoding.UTF8.GetBytes(message));
+        }
+
+        public string DecryptString(byte[] message)
+        {
+            return Encoding.UTF8.GetString(Decrypt(message));
+        }
+        #endregion
     }
 }

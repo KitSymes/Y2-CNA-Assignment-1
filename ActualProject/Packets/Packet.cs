@@ -1,13 +1,16 @@
 ﻿using System;
 using System.Net;
+using System.Security.Cryptography;
 
 namespace Packets
 {
     public enum PacketType
     {
-        LOGIN, CLIENT_JOIN, CLIENT_LEAVE,
+        LOGIN, SERVER_PUBLIC_KEY,
+        CLIENT_JOIN, CLIENT_LEAVE,
         CLIENT_NAME_UPDATE, CLIENT_NAME_UPDATE_RECEIVED,
         CHAT_MESSAGE, CHAT_MESSAGE_RECEIVED,
+        ENCRYPTED_CHAT_MESSAGE, ENCRYPTED_CHAT_MESSAGE_RECEIVED,
         PRIVATE_MESSAGE, PRIVATE_MESSAGE_RECEIVED
     }
 
@@ -24,15 +27,29 @@ namespace Packets
         public IPEndPoint endPoint;
         public Guid guid;
         public string name;
-        public LoginPacket(IPEndPoint endPoint, Guid guid, string name)
+        public RSAParameters publicKey;
+        public LoginPacket(IPEndPoint endPoint, Guid guid, string name, RSAParameters publicKey)
         {
-            this.endPoint = endPoint;
             packetType = PacketType.LOGIN;
+            this.endPoint = endPoint;
             this.guid = guid;
             this.name = name;
+            this.publicKey = publicKey;
         }
     }
 
+    [Serializable]
+    public class ServerPublicKeyPacket : Packet
+    {
+        public RSAParameters publicKey;
+        public ServerPublicKeyPacket(RSAParameters publicKey)
+        {
+            packetType = PacketType.SERVER_PUBLIC_KEY;
+            this.publicKey = publicKey;
+        }
+    }
+
+    #region Join/Leave
     [Serializable]
     public class ClientJoinPacket : Packet
     {
@@ -56,6 +73,7 @@ namespace Packets
             this.guid = guid;
         }
     }
+    #endregion
 
     #region Client Name Change
     [Serializable]
@@ -103,6 +121,32 @@ namespace Packets
         public ChatMessageReceivedPacket(string message, Guid from)
         {
             packetType = PacketType.CHAT_MESSAGE_RECEIVED;
+            this.from = from;
+            this.message = message;
+        }
+    }
+    #endregion
+
+    #region Encrypted Chat Message
+    [Serializable]
+    public class EncryptedChatMessagePacket : Packet
+    {
+        public byte[] message;
+        public EncryptedChatMessagePacket(byte[] message)
+        {
+            packetType = PacketType.ENCRYPTED_CHAT_MESSAGE;
+            this.message = message;
+        }
+    }
+
+    [Serializable]
+    public class EncryptedChatMessageReceivedPacket : Packet
+    {
+        public byte[] message;
+        public byte[] from;
+        public EncryptedChatMessageReceivedPacket(byte[] message, byte[] from)
+        {
+            packetType = PacketType.ENCRYPTED_CHAT_MESSAGE_RECEIVED;
             this.from = from;
             this.message = message;
         }

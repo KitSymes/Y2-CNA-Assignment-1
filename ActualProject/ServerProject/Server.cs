@@ -6,6 +6,7 @@ using System.Threading;
 using Packets;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Text;
 
 namespace ServerProject
 {
@@ -119,7 +120,10 @@ namespace ServerProject
                 sender.endPoint = loginPacket.endPoint;
                 sender.guid = loginPacket.guid;
                 sender.nickname = loginPacket.name;
+                sender.SetClientKey(loginPacket.publicKey);
                 sender.ready = true;
+
+                sender.TCPSend(new ServerPublicKeyPacket(sender.GetPublicKey()));
 
                 foreach (ConnectedClient connectedClient in clientsByID.Values)
                     connectedClient.TCPSend(new ClientJoinPacket(sender.guid, sender.nickname));
@@ -132,6 +136,13 @@ namespace ServerProject
                         foreach (ConnectedClient c in clientsByID.Values)
                             if (c.ready)
                                 c.TCPSend(new ChatMessageReceivedPacket(chatPacket.message, sender.guid));
+                        break;
+                    case PacketType.ENCRYPTED_CHAT_MESSAGE:
+                        EncryptedChatMessagePacket encryptedChatPacket = (EncryptedChatMessagePacket)packet;
+                        string decryptedMessage = sender.DecryptString(encryptedChatPacket.message);
+                        foreach (ConnectedClient c in clientsByID.Values)
+                            if (c.ready)
+                                c.TCPSend(new EncryptedChatMessageReceivedPacket(c.EncryptString(decryptedMessage), c.EncryptString(sender.guid.ToString())));
                         break;
                     case PacketType.CLIENT_NAME_UPDATE:
                         ClientNameChangePacket nameChangePacket = (ClientNameChangePacket)packet;
