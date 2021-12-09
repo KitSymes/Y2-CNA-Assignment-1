@@ -9,7 +9,7 @@ namespace ClientProject
 
         public ChatChannel()
         {
-            messages = new();
+            messages = new List<string>();
             watched = false;
         }
 

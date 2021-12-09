@@ -65,7 +65,7 @@ namespace ClientProject
                 MessageBox.Show("IPAddress is empty!", "Warning");
                 return;
             }
-            Regex ipReg = new("[^0-9\\.]");
+            Regex ipReg = new Regex("[^0-9\\.]");
             if (ipReg.IsMatch(IPAddressInput.Text))
             {
                 MessageBox.Show("IPAddress is not valid!", "Warning");
@@ -77,7 +77,7 @@ namespace ClientProject
                 MessageBox.Show("Port is empty!", "Warning");
                 return;
             }
-            Regex portReg = new("[^0-9]");
+            Regex portReg = new Regex("[^0-9]");
             if (portReg.IsMatch(PortInput.Text))
             {
                 MessageBox.Show("Port is not valid!", "Warning");
@@ -87,7 +87,6 @@ namespace ClientProject
             if (client.Connect(IPAddressInput.Text, int.Parse(PortInput.Text)))
             {
                 client.Run();
-                //client.TCPSend(new ClientJoinPacket(client.guid, client.name));
             }
             else
             {

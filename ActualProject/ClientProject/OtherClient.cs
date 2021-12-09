@@ -18,7 +18,7 @@ namespace ClientProject
             this.name = name;
             this.local = local;
             if (!local)
-                privateMessages = new();
+                privateMessages = new ChatChannel();
         }
 
         public OtherClient(Guid guid, string name) : this(guid, name, false)

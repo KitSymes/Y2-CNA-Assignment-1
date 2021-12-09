@@ -30,13 +30,13 @@ namespace ClientProject
 
         public Client()
         {
-            tcpClient = new();
+            tcpClient = new TcpClient();
 
-            clients = new();
-            mainChannel = new();
+            clients = new ConcurrentDictionary<Guid, OtherClient>();
+            mainChannel = new ChatChannel();
             guid = Guid.NewGuid();
 
-            form = new(this);
+            form = new MainWindow(this);
             form.ShowDialog();
         }
 
@@ -47,11 +47,11 @@ namespace ClientProject
                 IPAddress ip = IPAddress.Parse(ipAddress);
                 tcpClient.Connect(ip, port);
                 stream = tcpClient.GetStream();
-                writer = new(stream);
-                reader = new(stream);
-                formatter = new();
+                writer = new BinaryWriter(stream);
+                reader = new BinaryReader(stream);
+                formatter = new BinaryFormatter();
 
-                udpClient = new();
+                udpClient = new UdpClient();
                 udpClient.Connect(ip, port);
                 return true;
             }
@@ -64,12 +64,12 @@ namespace ClientProject
 
         public void Run()
         {
-            Thread tcp = new(() =>
+            Thread tcp = new Thread(() =>
             {
                 TDPProcessServerResponse();
             });
             tcp.Start();
-            Thread udp = new(() =>
+            Thread udp = new Thread(() =>
             {
                 UDPProcessServerResponse();
             });
@@ -90,15 +90,58 @@ namespace ClientProject
 
         public void Login()
         {
-            TCPSend(new LoginPacket((IPEndPoint)tcpClient.Client.LocalEndPoint, guid, nickname));
+            TCPSend(new LoginPacket((IPEndPoint)udpClient.Client.LocalEndPoint, guid, nickname));
         }
 
-        #region
+        private void ProcessPacket(Packet packet)
+        {
+            switch (packet.packetType)
+            {
+                case PacketType.CLIENT_JOIN:
+                    ClientJoinPacket joinPacket = (ClientJoinPacket)packet;
+                    OtherClient otherClient = new OtherClient(joinPacket.guid, joinPacket.name, joinPacket.guid == guid);
+                    clients.TryAdd(joinPacket.guid, otherClient);
+                    form.AddClient(otherClient);
+                    mainChannel.Add(joinPacket.name + " has joined.");
+                    if (mainChannel.watched)
+                        form.UpdateChatBox(mainChannel.Format());
+                    break;
+                case PacketType.CLIENT_NAME_UPDATE_RECEIVED:
+                    ClientNameChangeReceivedPacket nameChangePacket = (ClientNameChangeReceivedPacket)packet;
+                    if (clients.ContainsKey(nameChangePacket.guid))
+                    {
+                        mainChannel.Add(clients[nameChangePacket.guid].name + " has changed their name to " + nameChangePacket.name + ".");
+                        clients[nameChangePacket.guid].ChangeName(nameChangePacket.name, form);
+                        if (mainChannel.watched)
+                            form.UpdateChatBox(mainChannel.Format());
+                    }
+                    break;
+                case PacketType.CHAT_MESSAGE_RECEIVED:
+                    ChatMessageReceivedPacket messagePacket = (ChatMessageReceivedPacket)packet;
+                    if (clients.ContainsKey(messagePacket.from))
+                    {
+                        mainChannel.Add(clients[messagePacket.from].name + ": " + messagePacket.message);
+                        if (mainChannel.watched)
+                            form.UpdateChatBox(mainChannel.Format());
+                    }
+                    else
+                    {
+                        mainChannel.Add("???: " + messagePacket.message);
+                        if (mainChannel.watched)
+                            form.UpdateChatBox(mainChannel.Format());
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        #region UDP
         public void UDPSend(Packet packet)
         {
             if (udpClient == null)
                 return;
-            MemoryStream ms = new();
+            MemoryStream ms = new MemoryStream();
             formatter.Serialize(ms, packet);
             byte[] buffer = ms.GetBuffer();
             udpClient.Send(buffer, buffer.Length);
@@ -108,17 +151,13 @@ namespace ClientProject
         {
             try
             {
-                IPEndPoint endPoint = new(IPAddress.Any, 0);
+                IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
                 while(true)
                 {
                     byte[] buffer = udpClient.Receive(ref endPoint);
-                    MemoryStream ms = new(buffer);
+                    MemoryStream ms = new MemoryStream(buffer);
                     Packet packet = formatter.Deserialize(ms) as Packet;
-                    switch (packet.packetType)
-                    {
-                        default:
-                            break;
-                    }
+                    ProcessPacket(packet);
                 }
             }
             catch (SocketException e)
@@ -135,7 +174,7 @@ namespace ClientProject
             if ((numberOfBytes = reader.ReadInt32()) != -1)
             {
                 byte[] buffer = reader.ReadBytes(numberOfBytes);
-                MemoryStream ms = new(buffer);
+                MemoryStream ms = new MemoryStream(buffer);
                 return formatter.Deserialize(ms) as Packet;
             }
             return null;
@@ -148,45 +187,7 @@ namespace ClientProject
                 try
                 {
                     Packet receivedMessage = TCPRead();
-                    switch (receivedMessage.packetType)
-                    {
-                        case PacketType.CLIENT_JOIN:
-                            ClientJoinPacket joinPacket = (ClientJoinPacket)receivedMessage;
-                            OtherClient otherClient = new(joinPacket.guid, joinPacket.name, joinPacket.guid == guid);
-                            clients.TryAdd(joinPacket.guid, otherClient);
-                            form.AddClient(otherClient);
-                            mainChannel.Add(joinPacket.name + " has joined.");
-                            if (mainChannel.watched)
-                                form.UpdateChatBox(mainChannel.Format());
-                            break;
-                        case PacketType.CLIENT_NAME_UPDATE_RECEIVED:
-                            ClientNameChangeReceivedPacket nameChangePacket = (ClientNameChangeReceivedPacket)receivedMessage;
-                            if (clients.ContainsKey(nameChangePacket.guid))
-                            {
-                                mainChannel.Add(clients[nameChangePacket.guid].name + " has changed their name to " + nameChangePacket.name + ".");
-                                clients[nameChangePacket.guid].ChangeName(nameChangePacket.name, form);
-                                if (mainChannel.watched)
-                                    form.UpdateChatBox(mainChannel.Format());
-                            }
-                            break;
-                        case PacketType.CHAT_MESSAGE_RECEIVED:
-                            ChatMessageReceivedPacket messagePacket = (ChatMessageReceivedPacket)receivedMessage;
-                            if (clients.ContainsKey(messagePacket.from))
-                            {
-                                mainChannel.Add(clients[messagePacket.from].name + ": " + messagePacket.message);
-                                if (mainChannel.watched)
-                                    form.UpdateChatBox(mainChannel.Format());
-                            }
-                            else
-                            {
-                                mainChannel.Add("???: " + messagePacket.message);
-                                if (mainChannel.watched)
-                                    form.UpdateChatBox(mainChannel.Format());
-                            }
-                            break;
-                        default:
-                            break;
-                    }
+                    ProcessPacket(receivedMessage);
                 }
                 catch (Exception e)
                 {
@@ -199,7 +200,7 @@ namespace ClientProject
         {
             if (!tcpClient.Connected)
                 return;
-            MemoryStream ms = new();
+            MemoryStream ms = new MemoryStream();
             formatter.Serialize(ms, packet);
             byte[] buffer = ms.GetBuffer();
             writer.Write(buffer.Length);

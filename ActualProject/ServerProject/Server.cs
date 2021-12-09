@@ -20,15 +20,15 @@ namespace ServerProject
         public Server(string ipAddress, int port)
         {
             IPAddress ip = IPAddress.Parse(ipAddress);
-            tcpListener = new(ip, port);
+            tcpListener = new TcpListener(ip, port);
 
-            udpClient = new(port);
+            udpClient = new UdpClient(port);
         }
 
         public void Start()
         {
             tcpListener.Start();
-            Thread udp = new(() =>
+            Thread udp = new Thread(() =>
             {
                 UdpListen();
             });
@@ -36,8 +36,8 @@ namespace ServerProject
 
             Console.WriteLine("Server is Listening");
 
-            connectedClients = new();
-            clientsByID = new();
+            connectedClients = new ConcurrentDictionary<int, ConnectedClient>();
+            clientsByID = new ConcurrentDictionary<Guid, ConnectedClient>();
             int clientIndex = 0;
 
             while (true)
@@ -47,7 +47,7 @@ namespace ServerProject
                 Console.WriteLine("Connection Made");
 
                 int index = clientIndex;
-                connectedClients.TryAdd(index, new(socket));
+                connectedClients.TryAdd(index, new ConnectedClient(socket));
                 clientIndex++;
 
                 Thread thread = new Thread(() => { TCPClientMethod(index); });
@@ -67,76 +67,33 @@ namespace ServerProject
 
             while ((receivedMessage = client.TCPRead()) != null)
             {
-                if (!client.ready)
-                {
-                    if (receivedMessage.packetType == PacketType.LOGIN)
-                    {
-                        LoginPacket packet = (LoginPacket)receivedMessage;
-                        if (clientsByID.ContainsKey(packet.guid))
-                            continue;
-
-                        foreach (ConnectedClient cl in clientsByID.Values)
-                            client.TCPSend(new ClientJoinPacket(cl.guid, cl.nickname));
-
-                        clientsByID.TryAdd(packet.guid, client);
-                        client.endPoint = (IPEndPoint)packet.endPoint;
-                        client.guid = packet.guid;
-                        client.nickname = packet.name;
-                        client.ready = true;
-
-                        foreach (ConnectedClient cl in clientsByID.Values)
-                            cl.TCPSend(new ClientJoinPacket(client.guid, client.nickname));
-                    }
-                    continue;
-                }
-
-                switch (receivedMessage.packetType)
-                {
-                    case PacketType.CHAT_MESSAGE:
-                        ChatMessagePacket chatPacket = (ChatMessagePacket)receivedMessage;
-                        foreach (ConnectedClient c in clientsByID.Values)
-                            if (c.ready)
-                                c.TCPSend(new ChatMessageReceivedPacket(chatPacket.message, client.guid));
-                        break;
-                    case PacketType.CLIENT_NAME_UPDATE:
-                        ClientNameChangePacket nameChangePacket = (ClientNameChangePacket)receivedMessage;
-                        client.nickname = nameChangePacket.name;
-                        foreach (ConnectedClient cl in clientsByID.Values)
-                            cl.TCPSend(new ClientNameChangeReceivedPacket(client.guid, nameChangePacket.name));
-                        break;
-                    default:
-                        break;
-                }
+                ProcessPacket(receivedMessage, client);
             }
 
             client.Close();
             ConnectedClient clientOut;
             connectedClients.TryRemove(index, out clientOut);
             clientsByID.TryRemove(client.guid, out clientOut);
-            foreach (ConnectedClient c in clientsByID.Values)
-                c.TCPSend(new ClientLeftPacket(client.guid));
+            foreach (ConnectedClient remainingClient in clientsByID.Values)
+                remainingClient.TCPSend(new ClientLeftPacket(client.guid));
         }
-    
+
         private void UdpListen()
         {
-            BinaryFormatter formatter = new();
+            BinaryFormatter formatter = new BinaryFormatter();
             try
             {
-                IPEndPoint endPoint = new(IPAddress.Any, 0);
+                IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
                 while (true)
                 {
                     byte[] buffer = udpClient.Receive(ref endPoint);
-                    MemoryStream ms = new(buffer);
+                    MemoryStream ms = new MemoryStream(buffer);
                     Packet packet = formatter.Deserialize(ms) as Packet;
-                    foreach (ConnectedClient c in connectedClients.Values)
+                    foreach (ConnectedClient client in connectedClients.Values)
                     {
-                        if (endPoint.ToString() != c.endPoint.ToString())
+                        if (endPoint.ToString() != client.endPoint.ToString())
                             continue;
-                        switch (packet.packetType)
-                        {
-                            default:
-                                break;
-                        }
+                        ProcessPacket(packet, client);
                     }
                 }
             }
@@ -144,6 +101,47 @@ namespace ServerProject
             {
                 Console.WriteLine("Client UDP Read Method Exception: " + e.Message);
             }
+        }
+
+        private void ProcessPacket(Packet packet, ConnectedClient sender)
+        {
+
+            if (!sender.ready)
+            {
+                LoginPacket loginPacket = (LoginPacket)packet;
+                if (clientsByID.ContainsKey(loginPacket.guid))
+                    return;
+
+                foreach (ConnectedClient connectedClient in clientsByID.Values)
+                    sender.TCPSend(new ClientJoinPacket(connectedClient.guid, connectedClient.nickname));
+
+                clientsByID.TryAdd(loginPacket.guid, sender);
+                sender.endPoint = loginPacket.endPoint;
+                sender.guid = loginPacket.guid;
+                sender.nickname = loginPacket.name;
+                sender.ready = true;
+
+                foreach (ConnectedClient connectedClient in clientsByID.Values)
+                    connectedClient.TCPSend(new ClientJoinPacket(sender.guid, sender.nickname));
+            }
+            else
+                switch (packet.packetType)
+                {
+                    case PacketType.CHAT_MESSAGE:
+                        ChatMessagePacket chatPacket = (ChatMessagePacket)packet;
+                        foreach (ConnectedClient c in clientsByID.Values)
+                            if (c.ready)
+                                c.TCPSend(new ChatMessageReceivedPacket(chatPacket.message, sender.guid));
+                        break;
+                    case PacketType.CLIENT_NAME_UPDATE:
+                        ClientNameChangePacket nameChangePacket = (ClientNameChangePacket)packet;
+                        sender.nickname = nameChangePacket.name;
+                        foreach (ConnectedClient cl in clientsByID.Values)
+                            cl.TCPSend(new ClientNameChangeReceivedPacket(sender.guid, nameChangePacket.name));
+                        break;
+                    default:
+                        break;
+                }
         }
     }
 }

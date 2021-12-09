@@ -31,10 +31,10 @@ namespace ServerProject
             
             this.socket = socket;
 
-            stream = new(socket);
-            formatter = new();
-            reader = new(stream, Encoding.UTF8);
-            writer = new(stream, Encoding.UTF8);
+            stream = new NetworkStream(socket);
+            formatter = new BinaryFormatter();
+            reader = new BinaryReader(stream, Encoding.UTF8);
+            writer = new BinaryWriter(stream, Encoding.UTF8);
         }
 
         public void Close()
@@ -53,7 +53,7 @@ namespace ServerProject
                 if ((numberOfBytes = reader.ReadInt32()) != -1)
                 {
                     byte[] buffer = reader.ReadBytes(numberOfBytes);
-                    MemoryStream ms = new(buffer);
+                    MemoryStream ms = new MemoryStream(buffer);
                     return formatter.Deserialize(ms) as Packet;
                 }
                 return null;
@@ -64,7 +64,7 @@ namespace ServerProject
         {
             lock (writeLock)
             {
-                MemoryStream ms = new();
+                MemoryStream ms = new MemoryStream();
                 formatter.Serialize(ms, message);
                 byte[] buffer = ms.GetBuffer();
                 writer.Write(buffer.Length);

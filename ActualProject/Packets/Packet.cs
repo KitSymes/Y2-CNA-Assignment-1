@@ -21,10 +21,10 @@ namespace Packets
     [Serializable]
     public class LoginPacket : Packet
     {
-        public EndPoint endPoint;
+        public IPEndPoint endPoint;
         public Guid guid;
         public string name;
-        public LoginPacket(EndPoint endPoint, Guid guid, string name)
+        public LoginPacket(IPEndPoint endPoint, Guid guid, string name)
         {
             this.endPoint = endPoint;
             packetType = PacketType.LOGIN;
