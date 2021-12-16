@@ -30,7 +30,7 @@ namespace ClientProject
                 if (cl.local)
                 {
                     Label control = new Label();
-                    control.Content = cl.name;
+                    control.Content = cl.nickname;
                     control.Style = (Style)userList.FindResource("SidebarLabelStyle");
                     userList.Children.Add(control);
                     cl.label = control;
@@ -38,7 +38,7 @@ namespace ClientProject
                 else
                 {
                     Button newButton = new Button();
-                    newButton.Content = cl.name;
+                    newButton.Content = cl.nickname;
                     newButton.Style = (Style)userList.FindResource("SidebarButtonStyle");
                     userList.Children.Add(newButton);
                     cl.button = newButton;

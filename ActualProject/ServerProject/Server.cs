@@ -66,9 +66,20 @@ namespace ServerProject
             Packet receivedMessage;
             ConnectedClient client = connectedClients[index];
 
-            while ((receivedMessage = client.TCPRead()) != null)
+            try
             {
-                ProcessPacket(receivedMessage, client);
+                while ((receivedMessage = client.TCPRead()) != null)
+                {
+                    ProcessPacket(receivedMessage, client);
+                }
+            }
+            catch (EndOfStreamException)
+            {
+                Console.WriteLine("Client Left: " + client.nickname);
+            }
+            catch (IOException)
+            {
+                Console.WriteLine("IOException for Client: " + client.nickname);
             }
 
             client.Close();

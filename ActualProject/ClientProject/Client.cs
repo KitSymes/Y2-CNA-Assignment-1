@@ -110,12 +110,21 @@ namespace ClientProject
             {
                 case PacketType.CLIENT_JOIN:
                     ClientJoinPacket joinPacket = (ClientJoinPacket)packet;
-                    OtherClient otherClient = new OtherClient(joinPacket.guid, joinPacket.name, joinPacket.guid == guid);
+                    OtherClient otherClient = new OtherClient(joinPacket.guid, joinPacket.nickname, joinPacket.guid == guid);
                     clients.TryAdd(joinPacket.guid, otherClient);
                     form.AddClient(otherClient);
-                    mainChannel.Add(joinPacket.name + " has joined.");
-                    if (mainChannel.watched)
-                        form.UpdateChatBox(mainChannel.Format());
+                    MessageChannel(mainChannel, joinPacket.nickname + " has joined.");
+                    break;
+                case PacketType.CLIENT_LEAVE:
+                    ClientLeftPacket leftPacket = (ClientLeftPacket)packet;
+                    OtherClient removed;
+                    if (clients.TryRemove(leftPacket.guid, out removed))
+                    {
+                        form.RemoveClient(removed);
+                        MessageChannel(mainChannel, removed.nickname + " has left.");
+                    }
+                    else
+                        throw new Exception("Something went wrong removing " + leftPacket.guid);
                     break;
                 case PacketType.SERVER_PUBLIC_KEY:
                     ServerPublicKeyPacket serverPublicKeyPacket = (ServerPublicKeyPacket)packet;
@@ -125,47 +134,45 @@ namespace ClientProject
                     ClientNameChangeReceivedPacket nameChangePacket = (ClientNameChangeReceivedPacket)packet;
                     if (clients.ContainsKey(nameChangePacket.guid))
                     {
-                        mainChannel.Add(clients[nameChangePacket.guid].name + " has changed their name to " + nameChangePacket.name + ".");
-                        clients[nameChangePacket.guid].ChangeName(nameChangePacket.name, form);
-                        if (mainChannel.watched)
-                            form.UpdateChatBox(mainChannel.Format());
+                        MessageChannel(mainChannel, clients[nameChangePacket.guid].nickname + " has changed their name to " + nameChangePacket.nickname + ".");
+                        clients[nameChangePacket.guid].ChangeName(nameChangePacket.nickname, form);
                     }
                     break;
                 case PacketType.CHAT_MESSAGE_RECEIVED:
                     ChatMessageReceivedPacket messagePacket = (ChatMessageReceivedPacket)packet;
                     if (clients.ContainsKey(messagePacket.from))
-                    {
-                        mainChannel.Add(clients[messagePacket.from].name + ": " + messagePacket.message);
-                        if (mainChannel.watched)
-                            form.UpdateChatBox(mainChannel.Format());
-                    }
+                        MessageChannel(mainChannel, clients[messagePacket.from].nickname + ": " + messagePacket.message);
                     else
-                    {
-                        mainChannel.Add("???: " + messagePacket.message);
-                        if (mainChannel.watched)
-                            form.UpdateChatBox(mainChannel.Format());
-                    }
+                        MessageChannel(mainChannel, "???: " + messagePacket.message);
                     break;
                 case PacketType.ENCRYPTED_CHAT_MESSAGE_RECEIVED:
                     EncryptedChatMessageReceivedPacket encryptedMessagePacket = (EncryptedChatMessageReceivedPacket)packet;
                     string decryptedMessage = DecryptString(encryptedMessagePacket.message);
                     Guid decryptedGuid = Guid.Parse(DecryptString(encryptedMessagePacket.from));
                     if (clients.ContainsKey(decryptedGuid))
-                    {
-                        mainChannel.Add(clients[decryptedGuid].name + ": " + decryptedMessage);
-                        if (mainChannel.watched)
-                            form.UpdateChatBox(mainChannel.Format());
-                    }
+                        MessageChannel(mainChannel, clients[decryptedGuid].nickname + ": " + decryptedMessage);
                     else
-                    {
-                        mainChannel.Add("???: " + decryptedMessage);
-                        if (mainChannel.watched)
-                            form.UpdateChatBox(mainChannel.Format());
-                    }
+                        MessageChannel(mainChannel, "???: " + decryptedMessage);
+                    break;
+                case PacketType.ENCRYPTED_PRIVATE_MESSAGE_RECEIVED:
+                    EncryptedPrivateMessageReceivedPacket privateMessagePacket = (EncryptedPrivateMessageReceivedPacket)packet;
+                    string decryptedPrivateMessage = DecryptString(privateMessagePacket.message);
+                    Guid decryptedPrivateGuid = Guid.Parse(DecryptString(privateMessagePacket.from));
+                    if (clients.ContainsKey(decryptedPrivateGuid))
+                        MessageChannel(clients[decryptedPrivateGuid].privateMessages, clients[decryptedPrivateGuid].nickname + ": " + decryptedPrivateMessage);
+                    else
+                        MessageChannel(mainChannel, "Unknown Private Message Received from" + guid + "\n" + decryptedPrivateMessage);
                     break;
                 default:
                     break;
             }
+        }
+
+        public void MessageChannel(ChatChannel channel, string message)
+        {
+            channel.Add(message);
+            if (channel.watched)
+                form.UpdateChatBox(channel.Format());
         }
 
         #region UDP

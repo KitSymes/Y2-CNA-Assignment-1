@@ -6,7 +6,7 @@ namespace ClientProject
     public class OtherClient
     {
         public Guid guid;
-        public String name;
+        public String nickname;
         public bool local;
         public ChatChannel privateMessages;
         public Button button;
@@ -15,7 +15,7 @@ namespace ClientProject
         public OtherClient(Guid guid, string name, bool local)
         {
             this.guid = guid;
-            this.name = name;
+            this.nickname = name;
             this.local = local;
             if (!local)
                 privateMessages = new ChatChannel();
@@ -28,7 +28,7 @@ namespace ClientProject
 
         public void ChangeName(string name, MainWindow form)
         {
-            this.name = name;
+            this.nickname = name;
             if (local)
                 label.Dispatcher.Invoke(() =>
                 {
