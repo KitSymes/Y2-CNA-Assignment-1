@@ -1,16 +1,17 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace ClientProject
 {
     public class ChatChannel
     {
         private List<string> messages;
-        public bool watched;
+        public Guid id;
 
-        public ChatChannel()
+        public ChatChannel(Guid id)
         {
             messages = new List<string>();
-            watched = false;
+            this.id = id;
         }
 
         public void Add(string message)

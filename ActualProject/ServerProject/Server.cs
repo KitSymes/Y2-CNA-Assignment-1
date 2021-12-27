@@ -117,7 +117,6 @@ namespace ServerProject
 
         private void ProcessPacket(Packet packet, ConnectedClient sender)
         {
-
             if (!sender.ready)
             {
                 LoginPacket loginPacket = (LoginPacket)packet;
@@ -154,6 +153,14 @@ namespace ServerProject
                         foreach (ConnectedClient c in clientsByID.Values)
                             if (c.ready)
                                 c.TCPSend(new EncryptedChatMessageReceivedPacket(c.EncryptString(decryptedMessage), c.EncryptString(sender.guid.ToString())));
+                        break;
+                    case PacketType.ENCRYPTED_PRIVATE_MESSAGE:
+                        EncryptedPrivateMessagePacket encryptedPrivateMessagePacket = (EncryptedPrivateMessagePacket)packet;
+                        string decryptedPrivateMessage = sender.DecryptString(encryptedPrivateMessagePacket.message);
+                        string decryptedPrivateID = sender.DecryptString(encryptedPrivateMessagePacket.to);
+                        ConnectedClient pmReciever = clientsByID[Guid.Parse(decryptedPrivateID)];
+                        if (pmReciever.ready)
+                            pmReciever.TCPSend(new EncryptedPrivateMessageReceivedPacket(pmReciever.EncryptString(decryptedPrivateMessage), pmReciever.EncryptString(sender.guid.ToString())));
                         break;
                     case PacketType.CLIENT_NAME_UPDATE:
                         ClientNameChangePacket nameChangePacket = (ClientNameChangePacket)packet;

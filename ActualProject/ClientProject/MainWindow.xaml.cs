@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -9,7 +10,6 @@ namespace ClientProject
     public partial class MainWindow : Window
     {
         private Client client;
-        private ChatChannel currentlyWatched;
 
         public MainWindow(Client client)
         {
@@ -19,8 +19,6 @@ namespace ClientProject
 
             UserUUIDBox.Content += client.guid.ToString();
             client.nickname = UserNameInput.Text;
-            currentlyWatched = client.mainChannel;
-            currentlyWatched.watched = true;
         }
 
         public void AddClient(OtherClient cl)
@@ -42,6 +40,7 @@ namespace ClientProject
                     newButton.Style = (Style)userList.FindResource("SidebarButtonStyle");
                     userList.Children.Add(newButton);
                     cl.button = newButton;
+                    newButton.Click += (x, y) => client.ChangeChannel(cl.privateMessages);
                 }
             });
         }
@@ -57,7 +56,7 @@ namespace ClientProject
             });
         }
 
-        private void Connect_Button_Click(object sender, RoutedEventArgs e)
+        private void ConnectClick(object sender, RoutedEventArgs e)
         {
             // IPAddress Validation
             if (IPAddressInput.Text.Length == 0)
@@ -94,7 +93,7 @@ namespace ClientProject
             }
         }
 
-        private void InputMessageBox_KeyDown(object sender, KeyEventArgs e)
+        private void SendMessage(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
             {
@@ -102,10 +101,20 @@ namespace ClientProject
                     return;
                 string msg = InputMessageBox.Text;
                 InputMessageBox.Clear();
-                if (useEncryptionBox.IsChecked.Value)
-                    client.UDPSend(new EncryptedChatMessagePacket(client.EncryptString(msg)));
+
+                if (client.currentChannel.id == client.mainChannel.id)
+                {
+                    if (useEncryptionBox.IsChecked.Value)
+                        client.UDPSend(new EncryptedChatMessagePacket(client.EncryptString(msg)));
+                    else
+                        client.UDPSend(new ChatMessagePacket(msg));
+                }
                 else
-                    client.UDPSend(new ChatMessagePacket(msg));
+                {
+                    client.MessageChannel(client.currentChannel, client.nickname + ": " + msg);
+                    client.UDPSend(new EncryptedPrivateMessagePacket(client.EncryptString(msg), client.EncryptString(client.currentChannel.id.ToString())));
+
+                }
             }
         }
 
@@ -124,6 +133,15 @@ namespace ClientProject
             });
         }
 
+        public void ClearChatBox()
+        {
+            CurrentChannelText.Dispatcher.Invoke(() =>
+            {
+                CurrentChannelText.Text = "";
+                CurrentChannelScroll.ScrollToEnd();
+            });
+        }
+
         private void UserNameInput_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
@@ -134,6 +152,11 @@ namespace ClientProject
                 client.TCPSend(new ClientNameChangePacket(name));
                 client.nickname = name;
             }
+        }
+
+        private void MainChannelButton(object sender, RoutedEventArgs e)
+        {
+            client.ChangeChannel(client.mainChannel);
         }
     }
 }

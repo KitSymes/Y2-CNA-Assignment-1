@@ -60,6 +60,7 @@
     <Grid Background="{DynamicResource MainBackground}">
         <StackPanel x:Name="userList" HorizontalAlignment="Left" Height="428" VerticalAlignment="Top" Width="100" Background="{DynamicResource DarkBackground}" Margin="0,1,0,0">
             <Label Height="29"/>
+            <Button Content="Main Channel" Height="30" Style="{DynamicResource SidebarButtonStyle}" Click="MainChannelButton"/>
             <Label Content="User List" Height="30" Style="{DynamicResource SidebarLabelStyle}"/>
         </StackPanel>
         <DockPanel VerticalAlignment="Top">
@@ -68,7 +69,7 @@
                 <TextBox x:Name="IPAddressInput" HorizontalAlignment="Left" Text="127.0.0.1" TextWrapping="NoWrap" Width="80" MaxLines="1" Style="{DynamicResource ToolbarTextBoxStyle}"/>
                 <Label Content="Port:" Style="{DynamicResource ToolbarLabelStyle}"/>
                 <TextBox x:Name="PortInput" HorizontalAlignment="Left" Text="4444" TextWrapping="NoWrap" Width="45" MaxLength="5" MaxLines="1" Style="{DynamicResource ToolbarTextBoxStyle}"/>
-                <Button Content="Connect" Click="Connect_Button_Click" Style="{DynamicResource ToolbarButtonStyle}" />
+                <Button Content="Connect" Click="ConnectClick" Style="{DynamicResource ToolbarButtonStyle}" />
                 <Separator/>
                 <Label Content="Name:" Style="{DynamicResource ToolbarLabelStyle}"/>
                 <TextBox x:Name="UserNameInput" HorizontalAlignment="Left" Text="John Doe" TextWrapping="NoWrap" Width="80" MaxLines="1" Style="{DynamicResource ToolbarTextBoxStyle}" KeyDown="UserNameInput_KeyDown"/>
@@ -82,7 +83,7 @@
 
             </TextBlock>
         </ScrollViewer>
-        <TextBox x:Name="InputMessageBox" HorizontalAlignment="Right" Height="30" Margin="0,0,10,10" VerticalAlignment="Bottom" Width="600" MaxLines="1" TextWrapping="Wrap" Style="{DynamicResource MainTextBoxStyle}" VerticalContentAlignment="Center" KeyDown="InputMessageBox_KeyDown">
+        <TextBox x:Name="InputMessageBox" HorizontalAlignment="Right" Height="30" Margin="0,0,10,10" VerticalAlignment="Bottom" Width="600" MaxLines="1" TextWrapping="Wrap" Style="{DynamicResource MainTextBoxStyle}" VerticalContentAlignment="Center" KeyDown="SendMessage">
 
         </TextBox>
 

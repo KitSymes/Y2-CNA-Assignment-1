@@ -29,6 +29,7 @@ namespace ClientProject
 
         private ConcurrentDictionary<Guid, OtherClient> clients;
         public ChatChannel mainChannel;
+        public ChatChannel currentChannel;
 
         private MainWindow form;
 
@@ -44,7 +45,8 @@ namespace ClientProject
             privateKey = rsaProvider.ExportParameters(true);
 
             clients = new ConcurrentDictionary<Guid, OtherClient>();
-            mainChannel = new ChatChannel();
+            mainChannel = new ChatChannel(Guid.Empty);
+            currentChannel = mainChannel;
             guid = Guid.NewGuid();
 
             form = new MainWindow(this);
@@ -171,8 +173,16 @@ namespace ClientProject
         public void MessageChannel(ChatChannel channel, string message)
         {
             channel.Add(message);
-            if (channel.watched)
+            if (channel.id == currentChannel.id)
                 form.UpdateChatBox(channel.Format());
+        }
+
+
+        public void ChangeChannel(ChatChannel channel)
+        {
+            form.ClearChatBox();
+            currentChannel = channel;
+            form.UpdateChatBox(channel.Format());
         }
 
         #region UDP

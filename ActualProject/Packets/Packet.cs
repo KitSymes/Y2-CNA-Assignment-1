@@ -11,7 +11,7 @@ namespace Packets
         CLIENT_NAME_UPDATE, CLIENT_NAME_UPDATE_RECEIVED,
         CHAT_MESSAGE, CHAT_MESSAGE_RECEIVED,
         ENCRYPTED_CHAT_MESSAGE, ENCRYPTED_CHAT_MESSAGE_RECEIVED,
-        PRIVATE_MESSAGE, ENCRYPTED_PRIVATE_MESSAGE_RECEIVED
+        ENCRYPTED_PRIVATE_MESSAGE, ENCRYPTED_PRIVATE_MESSAGE_RECEIVED
     }
 
     [Serializable]
@@ -155,13 +155,13 @@ namespace Packets
 
     #region PrivateMessage
     [Serializable]
-    public class PrivateMessagePacket : Packet
+    public class EncryptedPrivateMessagePacket : Packet
     {
-        public string message;
-        public Guid to;
-        public PrivateMessagePacket(string message, Guid to)
+        public byte[] message;
+        public byte[] to;
+        public EncryptedPrivateMessagePacket(byte[] message, byte[] to)
         {
-            packetType = PacketType.PRIVATE_MESSAGE;
+            packetType = PacketType.ENCRYPTED_PRIVATE_MESSAGE;
             this.message = message;
             this.to = to;
         }
