@@ -32,6 +32,7 @@ namespace ClientProject
         public ChatChannel currentChannel;
 
         private MainWindow form;
+        public byte r = 0, g = 0, b = 0;
 
         public Guid guid;
         public String nickname;

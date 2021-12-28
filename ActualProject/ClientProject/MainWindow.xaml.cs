@@ -1,8 +1,12 @@
 ﻿using System;
+using System.Drawing;
+using System.IO;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using Packets;
 
 namespace ClientProject
@@ -10,12 +14,22 @@ namespace ClientProject
     public partial class MainWindow : Window
     {
         private Client client;
+        Bitmap bitmap;
 
         public MainWindow(Client client)
         {
             this.client = client;
 
             InitializeComponent();
+
+            RenderOptions.SetBitmapScalingMode(Canvas, BitmapScalingMode.NearestNeighbor);
+            bitmap = new Bitmap(166, 75);
+            for (int x = 0; x < bitmap.Width; x++)
+                for (int y = 0; y < bitmap.Height; y++)
+                    bitmap.SetPixel(x, y, System.Drawing.Color.White);
+            Canvas.Source = BitmapToImageSource(bitmap);
+            DisableCanvas();
+            //EnableCanvas();
 
             UserUUIDBox.Content += client.guid.ToString();
             client.nickname = UserNameInput.Text;
@@ -157,6 +171,72 @@ namespace ClientProject
         private void MainChannelButton(object sender, RoutedEventArgs e)
         {
             client.ChangeChannel(client.mainChannel);
+        }
+
+        public void EnableCanvas()
+        {
+            CurrentChannelScroll.Visibility = Visibility.Hidden;
+            InputMessageBox.Visibility = Visibility.Hidden;
+
+            Canvas.Visibility = Visibility.Visible;
+            Colour1.Visibility = Visibility.Visible;
+            Colour2.Visibility = Visibility.Visible;
+            Colour3.Visibility = Visibility.Visible;
+            Colour4.Visibility = Visibility.Visible;
+            Colour5.Visibility = Visibility.Visible;
+            Colour6.Visibility = Visibility.Visible;
+            Colour7.Visibility = Visibility.Visible;
+            Colour8.Visibility = Visibility.Visible;
+            Colour9.Visibility = Visibility.Visible;
+        }
+
+        public void DisableCanvas()
+        {
+            CurrentChannelScroll.Visibility = Visibility.Visible;
+            InputMessageBox.Visibility = Visibility.Visible;
+
+            Canvas.Visibility = Visibility.Hidden;
+            Colour1.Visibility = Visibility.Hidden;
+            Colour2.Visibility = Visibility.Hidden;
+            Colour3.Visibility = Visibility.Hidden;
+            Colour4.Visibility = Visibility.Hidden;
+            Colour5.Visibility = Visibility.Hidden;
+            Colour6.Visibility = Visibility.Hidden;
+            Colour7.Visibility = Visibility.Hidden;
+            Colour8.Visibility = Visibility.Hidden;
+            Colour9.Visibility = Visibility.Hidden;
+        }
+
+        BitmapImage BitmapToImageSource(Bitmap bitmap)
+        {
+            using (MemoryStream memory = new MemoryStream())
+            {
+                bitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Bmp);
+                memory.Position = 0;
+                BitmapImage bitmapimage = new BitmapImage();
+                bitmapimage.BeginInit();
+                bitmapimage.StreamSource = memory;
+                bitmapimage.CacheOption = BitmapCacheOption.OnLoad;
+                bitmapimage.EndInit();
+
+                return bitmapimage;
+            }
+        }
+
+        private void CanvasClick(object sender, MouseButtonEventArgs e)
+        {
+            System.Windows.Point p = e.GetPosition(((IInputElement)e.Source));
+            int x = (int)(p.X / (Canvas.Width / bitmap.Width));
+            int y = (int)(p.Y / (Canvas.Height / bitmap.Height));
+            bitmap.SetPixel(x, y, System.Drawing.Color.FromArgb(client.r, client.g, client.b));
+            Canvas.Source = BitmapToImageSource(bitmap);
+        }
+
+        private void ColorClick(object sender, RoutedEventArgs e)
+        {
+            client.r = ((SolidColorBrush)((Button)sender).Background).Color.R;
+            client.g = ((SolidColorBrush)((Button)sender).Background).Color.G;
+            client.b = ((SolidColorBrush)((Button)sender).Background).Color.B;
         }
     }
 }

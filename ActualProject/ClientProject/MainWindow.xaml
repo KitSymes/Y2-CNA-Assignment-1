@@ -13,6 +13,7 @@
         <SolidColorBrush x:Key="MainBackground" Color="#FF2F3037"/>
         <SolidColorBrush x:Key="LightBackground" Color="#FF40444B"/>
         <SolidColorBrush x:Key="ChatBackground" Color="#FF36393F"/>
+        
         <!--Toolbar-->
         <Style x:Key="ToolbarLabelStyle" TargetType="Label">
             <Setter Property="Foreground" Value="{StaticResource ToolbarTextColour}"/>
@@ -56,6 +57,16 @@
             <Setter Property="Height" Value="20"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
         </Style>
+
+        <!--Canvas-->
+        <Style x:Key="CanvasButtonStyle" TargetType="Button">
+            <Setter Property="BorderBrush" Value="{x:Null}"/>
+            <Setter Property="Width" Value="30"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="VerticalAlignment" Value="Bottom"/>
+        </Style>
+
     </Window.Resources>
     <Grid Background="{DynamicResource MainBackground}">
         <StackPanel x:Name="userList" HorizontalAlignment="Left" Height="428" VerticalAlignment="Top" Width="100" Background="{DynamicResource DarkBackground}" Margin="0,1,0,0">
@@ -86,6 +97,17 @@
         <TextBox x:Name="InputMessageBox" HorizontalAlignment="Right" Height="30" Margin="0,0,10,10" VerticalAlignment="Bottom" Width="600" MaxLines="1" TextWrapping="Wrap" Style="{DynamicResource MainTextBoxStyle}" VerticalContentAlignment="Center" KeyDown="SendMessage">
 
         </TextBox>
+
+        <Image x:Name="Canvas" Width="664" Height="300" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="110,40,0,0" MouseDown="CanvasClick" Stretch="Fill"/>
+        <Button x:Name="Colour1" Margin="110,0,0,5" Style="{DynamicResource CanvasButtonStyle}" Click="ColorClick"/>
+        <Button x:Name="Colour2" Margin="150,0,0,5" Style="{DynamicResource CanvasButtonStyle}" Click="ColorClick" Background="Black"/>
+        <Button x:Name="Colour3" Margin="190,0,0,5" Style="{DynamicResource CanvasButtonStyle}" Click="ColorClick" Background="Red"/>
+        <Button x:Name="Colour4" Margin="230,0,0,5" Style="{DynamicResource CanvasButtonStyle}" Click="ColorClick" Background="Yellow"/>
+        <Button x:Name="Colour5" Margin="270,0,0,5" Style="{DynamicResource CanvasButtonStyle}" Click="ColorClick" Background="Magenta"/>
+        <Button x:Name="Colour6" Margin="310,0,0,5" Style="{DynamicResource CanvasButtonStyle}" Click="ColorClick" Background="Green"/>
+        <Button x:Name="Colour7" Margin="350,0,0,5" Style="{DynamicResource CanvasButtonStyle}" Click="ColorClick" Background="Orange"/>
+        <Button x:Name="Colour8" Margin="390,0,0,5" Style="{DynamicResource CanvasButtonStyle}" Click="ColorClick" Background="Purple"/>
+        <Button x:Name="Colour9" Margin="430,0,0,5" Style="{DynamicResource CanvasButtonStyle}" Click="ColorClick" Background="Blue"/>
 
     </Grid>
 </Window>
