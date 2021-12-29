@@ -14,7 +14,7 @@ namespace ClientProject
     public partial class MainWindow : Window
     {
         private Client client;
-        Bitmap bitmap;
+        public Bitmap bitmap;
 
         public MainWindow(Client client)
         {
@@ -27,7 +27,7 @@ namespace ClientProject
             for (int x = 0; x < bitmap.Width; x++)
                 for (int y = 0; y < bitmap.Height; y++)
                     bitmap.SetPixel(x, y, System.Drawing.Color.White);
-            Canvas.Source = BitmapToImageSource(bitmap);
+            UpdateBitmap();
             DisableCanvas();
             //EnableCanvas();
 
@@ -223,13 +223,22 @@ namespace ClientProject
             }
         }
 
+        public void UpdateBitmap()
+        {
+            Canvas.Dispatcher.Invoke(() =>
+            {
+                Canvas.Source = BitmapToImageSource(bitmap);
+            });
+        }
+
         private void CanvasClick(object sender, MouseButtonEventArgs e)
         {
             System.Windows.Point p = e.GetPosition(((IInputElement)e.Source));
             int x = (int)(p.X / (Canvas.Width / bitmap.Width));
             int y = (int)(p.Y / (Canvas.Height / bitmap.Height));
-            bitmap.SetPixel(x, y, System.Drawing.Color.FromArgb(client.r, client.g, client.b));
-            Canvas.Source = BitmapToImageSource(bitmap);
+            //bitmap.SetPixel(x, y, System.Drawing.Color.FromArgb(client.r, client.g, client.b));
+            //UpdateBitmap();
+            client.TCPSend(new CanvasPaintPacket(x, y, client.r, client.g, client.b));
         }
 
         private void ColorClick(object sender, RoutedEventArgs e)
@@ -237,6 +246,11 @@ namespace ClientProject
             client.r = ((SolidColorBrush)((Button)sender).Background).Color.R;
             client.g = ((SolidColorBrush)((Button)sender).Background).Color.G;
             client.b = ((SolidColorBrush)((Button)sender).Background).Color.B;
+        }
+
+        private void CanvasButton(object sender, RoutedEventArgs e)
+        {
+            EnableCanvas();
         }
     }
 }

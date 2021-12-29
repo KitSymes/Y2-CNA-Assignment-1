@@ -9,6 +9,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
+using System.Drawing;
 
 namespace ClientProject
 {
@@ -166,6 +167,30 @@ namespace ClientProject
                     else
                         MessageChannel(mainChannel, "Unknown Private Message Received from" + guid + "\n" + decryptedPrivateMessage);
                     break;
+                case PacketType.CANVAS_SYNC:
+                    CanvasSyncPacket canvasSyncPacket = (CanvasSyncPacket)packet;
+                    Bitmap bitmap = new Bitmap(canvasSyncPacket.width, canvasSyncPacket.height);
+
+                    for (int y = 0; y < bitmap.Height; y++)
+                        for (int x = 0; x < bitmap.Width; x++)
+                        {
+                            byte r = canvasSyncPacket.r[x + y * bitmap.Width];
+                            byte g = canvasSyncPacket.g[x + y * bitmap.Width];
+                            byte b = canvasSyncPacket.b[x + y * bitmap.Width];
+                            bitmap.SetPixel(x, y, Color.FromArgb(r, g, b));
+                        }
+
+                    form.Canvas.Dispatcher.Invoke(() =>
+                    {
+                        form.bitmap = bitmap;
+                        form.UpdateBitmap();
+                    });
+                    break;
+                case PacketType.CANVAS_PAINT:
+                    CanvasPaintPacket canvasPaintPacket = (CanvasPaintPacket)packet;
+                    form.bitmap.SetPixel(canvasPaintPacket.x, canvasPaintPacket.y, System.Drawing.Color.FromArgb(canvasPaintPacket.r, canvasPaintPacket.g, canvasPaintPacket.b));
+                    form.UpdateBitmap();
+                    break;
                 default:
                     break;
             }
@@ -178,9 +203,9 @@ namespace ClientProject
                 form.UpdateChatBox(channel.Format());
         }
 
-
         public void ChangeChannel(ChatChannel channel)
         {
+            form.Canvas.Dispatcher.Invoke(() => { form.DisableCanvas(); });
             form.ClearChatBox();
             currentChannel = channel;
             form.UpdateChatBox(channel.Format());

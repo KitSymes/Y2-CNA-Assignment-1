@@ -7,6 +7,7 @@ using Packets;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
+using System.Drawing;
 
 namespace ServerProject
 {
@@ -14,12 +15,17 @@ namespace ServerProject
     {
         private TcpListener tcpListener;
         private UdpClient udpClient;
+        private Bitmap bitmap = new Bitmap(166, 75);
 
         private ConcurrentDictionary<int, ConnectedClient> connectedClients;
         private ConcurrentDictionary<Guid, ConnectedClient> clientsByID;
 
         public Server(string ipAddress, int port)
         {
+            for (int x = 0; x < bitmap.Width; x++)
+                for (int y = 0; y < bitmap.Height; y++)
+                    bitmap.SetPixel(x, y, System.Drawing.Color.White);
+
             IPAddress ip = IPAddress.Parse(ipAddress);
             tcpListener = new TcpListener(ip, port);
 
@@ -133,6 +139,21 @@ namespace ServerProject
                 sender.SetClientKey(loginPacket.publicKey);
                 sender.ready = true;
 
+                int size = bitmap.Width * bitmap.Height;
+                byte[] r, g, b;
+                r = new byte[size];
+                g = new byte[size];
+                b = new byte[size];
+                for (int y = 0; y < bitmap.Height; y++)
+                    for (int x = 0; x < bitmap.Width; x++)
+                    {
+                        r[x + y * bitmap.Width] = bitmap.GetPixel(x, y).R;
+                        g[x + y * bitmap.Width] = bitmap.GetPixel(x, y).G;
+                        b[x + y * bitmap.Width] = bitmap.GetPixel(x, y).B;
+                    }
+
+                sender.TCPSend(new CanvasSyncPacket(bitmap.Width, bitmap.Height, r, g, b));
+
                 sender.TCPSend(new ServerPublicKeyPacket(sender.GetPublicKey()));
 
                 foreach (ConnectedClient connectedClient in clientsByID.Values)
@@ -167,6 +188,14 @@ namespace ServerProject
                         sender.nickname = nameChangePacket.name;
                         foreach (ConnectedClient cl in clientsByID.Values)
                             cl.TCPSend(new ClientNameChangeReceivedPacket(sender.guid, nameChangePacket.name));
+                        break;
+                    case PacketType.CANVAS_PAINT:
+                        CanvasPaintPacket canvasPaintPacket = (CanvasPaintPacket)packet;
+                        Color c1 = bitmap.GetPixel(canvasPaintPacket.x, canvasPaintPacket.y);
+                        bitmap.SetPixel(canvasPaintPacket.x, canvasPaintPacket.y, System.Drawing.Color.FromArgb(canvasPaintPacket.r, canvasPaintPacket.g, canvasPaintPacket.b));
+                        Color c2 = bitmap.GetPixel(canvasPaintPacket.x, canvasPaintPacket.y);
+                        foreach (ConnectedClient c in clientsByID.Values)
+                            c.TCPSend(canvasPaintPacket);
                         break;
                     default:
                         break;

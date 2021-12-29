@@ -72,6 +72,7 @@
         <StackPanel x:Name="userList" HorizontalAlignment="Left" Height="428" VerticalAlignment="Top" Width="100" Background="{DynamicResource DarkBackground}" Margin="0,1,0,0">
             <Label Height="29"/>
             <Button Content="Main Channel" Height="30" Style="{DynamicResource SidebarButtonStyle}" Click="MainChannelButton"/>
+            <Button Content="Canvas" Height="30" Style="{DynamicResource SidebarButtonStyle}" Click="CanvasButton"/>
             <Label Content="User List" Height="30" Style="{DynamicResource SidebarLabelStyle}"/>
         </StackPanel>
         <DockPanel VerticalAlignment="Top">

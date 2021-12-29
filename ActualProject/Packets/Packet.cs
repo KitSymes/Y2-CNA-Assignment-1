@@ -11,7 +11,8 @@ namespace Packets
         CLIENT_NAME_UPDATE, CLIENT_NAME_UPDATE_RECEIVED,
         CHAT_MESSAGE, CHAT_MESSAGE_RECEIVED,
         ENCRYPTED_CHAT_MESSAGE, ENCRYPTED_CHAT_MESSAGE_RECEIVED,
-        ENCRYPTED_PRIVATE_MESSAGE, ENCRYPTED_PRIVATE_MESSAGE_RECEIVED
+        ENCRYPTED_PRIVATE_MESSAGE, ENCRYPTED_PRIVATE_MESSAGE_RECEIVED,
+        CANVAS_SYNC, CANVAS_PAINT
     }
 
     [Serializable]
@@ -177,6 +178,46 @@ namespace Packets
             packetType = PacketType.ENCRYPTED_PRIVATE_MESSAGE_RECEIVED;
             this.message = message;
             this.from = from;
+        }
+    }
+    #endregion
+
+    #region Canvas
+    [Serializable]
+    public class CanvasSyncPacket : Packet
+    {
+        public int width;
+        public int height;
+        public byte[] r;
+        public byte[] g;
+        public byte[] b;
+        public CanvasSyncPacket(int width, int height, byte[] r, byte[] g, byte[] b)
+        {
+            packetType = PacketType.CANVAS_SYNC;
+            this.width = width;
+            this.height = height;
+            this.r = r;
+            this.g = g;
+            this.b = b;
+        }
+    }
+
+    [Serializable]
+    public class CanvasPaintPacket : Packet
+    {
+        public int x;
+        public int y;
+        public byte r;
+        public byte g;
+        public byte b;
+        public CanvasPaintPacket(int x, int y, byte r, byte g, byte b)
+        {
+            packetType = PacketType.CANVAS_PAINT;
+            this.x = x;
+            this.y = y;
+            this.r = r;
+            this.g = g;
+            this.b = b;
         }
     }
     #endregion
