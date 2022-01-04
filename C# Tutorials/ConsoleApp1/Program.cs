@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 
 public class Program
@@ -199,6 +200,150 @@ public class Program
         thread1.Start();
         Console.ReadLine();
         Console.WriteLine("Total Threads: " + W02T03threadCount);
+    }
+
+    #endregion
+
+    #region W01
+
+    public void W01T09()
+    {
+        string[] words = new string[] { "justice", "axis", "prescription", "miracle", "roof", "achieve", "invite", "indirect", "attitude" };
+        string word = words[new Random().Next(0, words.Length)];
+        string guessed = "";
+
+        while (true)
+        {
+            string placeholder = "";
+            for (int i = 0; i < word.Length; i++)
+                placeholder += guessed.Contains(word[i]) ? word[i] : '_';
+            if (placeholder == word)
+                break;
+            Console.WriteLine("Word is: " + placeholder);
+            Console.WriteLine("guessed letters: " + guessed);
+            Console.WriteLine("Guess a letter");
+            string guess = Console.ReadLine();
+            if (guess.Length > 1)
+            {
+                Console.WriteLine("Only 1 letter at a time");
+            }
+            else if (guessed.Contains(guess))
+            {
+                Console.WriteLine("Already guessed");
+            }
+            else
+            {
+                guessed += guess;
+            }
+            Console.WriteLine("");
+        }
+
+        Console.WriteLine("You got it! The word was: " + word);
+    }
+
+    public void W01T08()
+    {
+        Animal animal = null;
+        int selection;
+        do
+        {
+            Console.WriteLine("Select the animal you want to hear:");
+            Console.WriteLine("1. Cat");
+            Console.WriteLine("2. Dog");
+            Console.WriteLine("3. Villager");
+            Console.WriteLine("4. Duck");
+            Console.WriteLine("5. Exit");
+            selection = int.Parse(Console.ReadLine());
+            switch (selection)
+            {
+                case 1:
+                    animal = new Dog();
+                    break;
+                case 2:
+                    animal = new Cat();
+                    break;
+                case 3:
+                    animal = new Villager();
+                    break;
+                case 4:
+                    animal = new Duck();
+                    break;
+                default:
+                    break;
+            }
+            if (1 <= selection && selection <= 4)
+                animal.Speak();
+        } while (selection != 5);
+    }
+
+    public void W01T07()
+    {
+        int target = new Random().Next(1, 101);
+        int guess;
+        do
+        {
+            Console.WriteLine("Enter your guess:");
+            guess = int.Parse(Console.ReadLine());
+            if (guess < target)
+                Console.WriteLine("Too small!");
+            else if (guess > target)
+                Console.WriteLine("Too big!");
+        } while (guess != target);
+        Console.WriteLine("You guessed it! It was " + target);
+    }
+
+    public float W01Add(float a, float b)
+    {
+        return a + b;
+    }
+
+    public int W01Add(int a, int b)
+    {
+        return a + b;
+    }
+
+    public void W01T04()
+    {
+        List<int> numbers = new List<int>();
+        for (int i = 0; i < 10; i++)
+        {
+            Console.WriteLine("Enter new number:");
+            numbers.Add(int.Parse(Console.ReadLine()));
+        }
+        numbers.Reverse();
+        Console.WriteLine("Reversed Input:");
+        for (int i = 0; i < 10; i++)
+            Console.Write(numbers[i] + (i < 9 ? ", " : ""));
+    }
+
+    public void W01T03()
+    {
+        int[] numbers = new int[10];
+        int highest = int.MinValue;
+        for (int i = 0; i < 10; i++)
+        {
+            Console.WriteLine("Enter new number:");
+            numbers[i] = int.Parse(Console.ReadLine());
+            if (numbers[i] > highest)
+                highest = numbers[i];
+            Console.WriteLine("Max number is currently: " + highest);
+        }
+    }
+
+    public void W01T02()
+    {
+        Console.WriteLine("Enter the width:");
+        int width = int.Parse(Console.ReadLine());
+        Console.WriteLine("Enter the height:");
+        int height = int.Parse(Console.ReadLine());
+
+        Console.WriteLine("The area is: " + (width * height));
+        Console.WriteLine("The perimiter is: " + (width * 2 + height * 2));
+    }
+
+    public void W01T01()
+    {
+        Console.WriteLine("Hello World");
     }
 
     #endregion
