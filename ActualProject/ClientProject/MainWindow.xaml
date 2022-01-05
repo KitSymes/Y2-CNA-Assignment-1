@@ -100,7 +100,7 @@
         </TextBox>
 
         <Image x:Name="Canvas" Width="664" Height="300" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="110,40,0,0" MouseDown="CanvasClick" Stretch="Fill"/>
-        <Button x:Name="Colour1" Margin="110,0,0,5" Style="{DynamicResource CanvasButtonStyle}" Click="ColorClick"/>
+        <Button x:Name="Colour1" Margin="110,0,0,5" Style="{DynamicResource CanvasButtonStyle}" Click="ColorClick" Background="White"/>
         <Button x:Name="Colour2" Margin="150,0,0,5" Style="{DynamicResource CanvasButtonStyle}" Click="ColorClick" Background="Black"/>
         <Button x:Name="Colour3" Margin="190,0,0,5" Style="{DynamicResource CanvasButtonStyle}" Click="ColorClick" Background="Red"/>
         <Button x:Name="Colour4" Margin="230,0,0,5" Style="{DynamicResource CanvasButtonStyle}" Click="ColorClick" Background="Yellow"/>
