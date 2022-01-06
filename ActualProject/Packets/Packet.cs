@@ -11,7 +11,7 @@ namespace Packets
         CLIENT_NAME_UPDATE, CLIENT_NAME_UPDATE_RECEIVED,
         CHAT_MESSAGE, CHAT_MESSAGE_RECEIVED,
         ENCRYPTED_CHAT_MESSAGE, ENCRYPTED_CHAT_MESSAGE_RECEIVED,
-        ENCRYPTED_PRIVATE_MESSAGE, ENCRYPTED_PRIVATE_MESSAGE_RECEIVED,
+        ENCRYPTED_PRIVATE_MESSAGE, ENCRYPTED_PRIVATE_MESSAGE_RECEIVED, ENCRYPTED_PRIVATE_MESSAGE_COMMAND_RECEIVED,
         CANVAS_SYNC, CANVAS_PAINT
     }
 
@@ -178,6 +178,19 @@ namespace Packets
             packetType = PacketType.ENCRYPTED_PRIVATE_MESSAGE_RECEIVED;
             this.message = message;
             this.from = from;
+        }
+    }
+
+    [Serializable]
+    public class EncryptedPrivateMessageCommandReceivedPacket : Packet
+    {
+        public byte[] message;
+        public byte[] channel;
+        public EncryptedPrivateMessageCommandReceivedPacket(byte[] message, byte[] channel)
+        {
+            packetType = PacketType.ENCRYPTED_PRIVATE_MESSAGE_COMMAND_RECEIVED;
+            this.message = message;
+            this.channel = channel;
         }
     }
     #endregion

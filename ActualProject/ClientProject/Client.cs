@@ -145,7 +145,7 @@ namespace ClientProject
                 case PacketType.CHAT_MESSAGE_RECEIVED:
                     ChatMessageReceivedPacket messagePacket = (ChatMessageReceivedPacket)packet;
                     if (clients.ContainsKey(messagePacket.from))
-                        MessageChannel(mainChannel, clients[messagePacket.from].nickname + ": " + messagePacket.message);
+                        MessageChannel(mainChannel, messagePacket.message);
                     else
                         MessageChannel(mainChannel, "???: " + messagePacket.message);
                     break;
@@ -154,7 +154,7 @@ namespace ClientProject
                     string decryptedMessage = DecryptString(encryptedMessagePacket.message);
                     Guid decryptedGuid = Guid.Parse(DecryptString(encryptedMessagePacket.from));
                     if (clients.ContainsKey(decryptedGuid))
-                        MessageChannel(mainChannel, clients[decryptedGuid].nickname + ": " + decryptedMessage);
+                        MessageChannel(mainChannel, decryptedMessage);
                     else
                         MessageChannel(mainChannel, "???: " + decryptedMessage);
                     break;
@@ -163,9 +163,16 @@ namespace ClientProject
                     string decryptedPrivateMessage = DecryptString(privateMessagePacket.message);
                     Guid decryptedPrivateGuid = Guid.Parse(DecryptString(privateMessagePacket.from));
                     if (clients.ContainsKey(decryptedPrivateGuid))
-                        MessageChannel(clients[decryptedPrivateGuid].privateMessages, clients[decryptedPrivateGuid].nickname + ": " + decryptedPrivateMessage);
+                        MessageChannel(clients[decryptedPrivateGuid].privateMessages, decryptedPrivateMessage);
                     else
                         MessageChannel(mainChannel, "Unknown Private Message Received from" + guid + "\n" + decryptedPrivateMessage);
+                    break;
+                case PacketType.ENCRYPTED_PRIVATE_MESSAGE_COMMAND_RECEIVED:
+                    EncryptedPrivateMessageCommandReceivedPacket privateMessageCommandPacket = (EncryptedPrivateMessageCommandReceivedPacket)packet;
+                    string privateMessageCommand = DecryptString(privateMessageCommandPacket.message);
+                    Guid commandGuid = Guid.Parse(DecryptString(privateMessageCommandPacket.channel));
+                    if (clients.ContainsKey(commandGuid))
+                        MessageChannel(clients[commandGuid].privateMessages, privateMessageCommand);
                     break;
                 case PacketType.CANVAS_SYNC:
                     CanvasSyncPacket canvasSyncPacket = (CanvasSyncPacket)packet;

@@ -8,6 +8,7 @@ using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Drawing;
+using System.Collections.Generic;
 
 namespace ServerProject
 {
@@ -19,9 +20,13 @@ namespace ServerProject
 
         private ConcurrentDictionary<int, ConnectedClient> connectedClients;
         private ConcurrentDictionary<Guid, ConnectedClient> clientsByID;
+        private List<RPSGame> rpsGames = new List<RPSGame>();
+        private object rpsGamesLock;
 
         public Server(string ipAddress, int port)
         {
+            rpsGamesLock = new object();
+
             for (int x = 0; x < bitmap.Width; x++)
                 for (int y = 0; y < bitmap.Height; y++)
                     bitmap.SetPixel(x, y, System.Drawing.Color.White);
@@ -166,14 +171,14 @@ namespace ServerProject
                         ChatMessagePacket chatPacket = (ChatMessagePacket)packet;
                         foreach (ConnectedClient c in clientsByID.Values)
                             if (c.ready)
-                                c.TCPSend(new ChatMessageReceivedPacket(chatPacket.message, sender.guid));
+                                c.TCPSend(new ChatMessageReceivedPacket(sender.nickname + ": " + chatPacket.message, sender.guid));
                         break;
                     case PacketType.ENCRYPTED_CHAT_MESSAGE:
                         EncryptedChatMessagePacket encryptedChatPacket = (EncryptedChatMessagePacket)packet;
                         string decryptedMessage = sender.DecryptString(encryptedChatPacket.message);
                         foreach (ConnectedClient c in clientsByID.Values)
                             if (c.ready)
-                                c.TCPSend(new EncryptedChatMessageReceivedPacket(c.EncryptString(decryptedMessage), c.EncryptString(sender.guid.ToString())));
+                                c.TCPSend(new EncryptedChatMessageReceivedPacket(c.EncryptString(decryptedMessage), c.EncryptString(sender.nickname + ": " + sender.guid.ToString())));
                         break;
                     case PacketType.ENCRYPTED_PRIVATE_MESSAGE:
                         EncryptedPrivateMessagePacket encryptedPrivateMessagePacket = (EncryptedPrivateMessagePacket)packet;
@@ -181,7 +186,116 @@ namespace ServerProject
                         string decryptedPrivateID = sender.DecryptString(encryptedPrivateMessagePacket.to);
                         ConnectedClient pmReciever = clientsByID[Guid.Parse(decryptedPrivateID)];
                         if (pmReciever.ready)
-                            pmReciever.TCPSend(new EncryptedPrivateMessageReceivedPacket(pmReciever.EncryptString(decryptedPrivateMessage), pmReciever.EncryptString(sender.guid.ToString())));
+                        {
+                            if (decryptedPrivateMessage.StartsWith("/"))
+                            {
+                                String[] command = decryptedPrivateMessage.Split(' ');
+                                switch (command[0])
+                                {
+                                    case "/help":
+                                        sender.TCPSend(new EncryptedPrivateMessageCommandReceivedPacket(sender.EncryptString("/help                      - Bring up this message"),
+                                            sender.EncryptString(pmReciever.guid.ToString())));
+                                        sender.TCPSend(new EncryptedPrivateMessageCommandReceivedPacket(sender.EncryptString("/rps <rock/paper/scissors> - Start/finish a game of Rock Papaer Scissors"),
+                                            sender.EncryptString(pmReciever.guid.ToString())));
+                                        sender.TCPSend(new EncryptedPrivateMessageCommandReceivedPacket(sender.EncryptString("/shrug                     - Shrug at them"),
+                                            sender.EncryptString(pmReciever.guid.ToString())));
+                                        break;
+                                    case "/rps":
+                                        if (command.Length != 2)
+                                        {
+                                            sender.TCPSend(new EncryptedPrivateMessageCommandReceivedPacket(sender.EncryptString("Invalid command length " + command.Length + ", must be 2."),
+                                                sender.EncryptString(pmReciever.guid.ToString())));
+                                            break;
+                                        }
+                                        else
+                                            lock (rpsGamesLock)
+                                            {
+                                                RPSGame game = null;
+                                                foreach (RPSGame rps in rpsGames)
+                                                    if (rps.Matches(sender.guid, pmReciever.guid))
+                                                        game = rps;
+                                                if (game == null)
+                                                {
+                                                    game = new RPSGame(sender.guid, pmReciever.guid);
+                                                    game.SetChoice(sender.guid, command[1]);
+                                                    rpsGames.Add(game);
+                                                    sender.TCPSend(new EncryptedPrivateMessageCommandReceivedPacket(sender.EncryptString("You challenged " + pmReciever.nickname + " to a game of Rock, Paper, Scissors!"),
+                                                        sender.EncryptString(pmReciever.guid.ToString())));
+                                                    pmReciever.TCPSend(new EncryptedPrivateMessageCommandReceivedPacket(pmReciever.EncryptString(sender.nickname + " challenged you to a game of Rock, Paper, Scissors!"),
+                                                        pmReciever.EncryptString(sender.guid.ToString())));
+                                                    if (game.GetChoice(sender.guid) == RPSGame.RPS.NONE)
+                                                    {
+                                                        sender.TCPSend(new EncryptedPrivateMessageCommandReceivedPacket(sender.EncryptString("You made an invalid choice! You are not ready."),
+                                                            sender.EncryptString(pmReciever.guid.ToString())));
+                                                    } else
+                                                    {
+                                                        sender.TCPSend(new EncryptedPrivateMessageCommandReceivedPacket(sender.EncryptString("You picked " + game.GetChoice(sender.guid).ToString() + "! You are ready."),
+                                                            sender.EncryptString(pmReciever.guid.ToString())));
+                                                        pmReciever.TCPSend(new EncryptedPrivateMessageCommandReceivedPacket(pmReciever.EncryptString(sender.nickname + " is ready."),
+                                                            pmReciever.EncryptString(sender.guid.ToString())));
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    if (game.GetChoice(sender.guid) == RPSGame.RPS.NONE)
+                                                    {
+                                                        game.SetChoice(sender.guid, command[1]);
+                                                        if (game.GetChoice(sender.guid) == RPSGame.RPS.NONE)
+                                                        {
+                                                            sender.TCPSend(new EncryptedPrivateMessageCommandReceivedPacket(sender.EncryptString("You made an invalid choice! You are not ready."),
+                                                                sender.EncryptString(pmReciever.guid.ToString())));
+                                                        }
+                                                        else
+                                                        {
+                                                            sender.TCPSend(new EncryptedPrivateMessageCommandReceivedPacket(sender.EncryptString("You picked " + game.GetChoice(sender.guid).ToString() + "! You are ready."),
+                                                                sender.EncryptString(pmReciever.guid.ToString())));
+                                                            pmReciever.TCPSend(new EncryptedPrivateMessageCommandReceivedPacket(pmReciever.EncryptString(sender.nickname + " is ready."),
+                                                                pmReciever.EncryptString(sender.guid.ToString())));
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        sender.TCPSend(new EncryptedPrivateMessageCommandReceivedPacket(sender.EncryptString("You already picked " + game.GetChoice(sender.guid).ToString() + "!"),
+                                                            sender.EncryptString(pmReciever.guid.ToString())));
+                                                    }
+
+                                                    if (game.IsReady())
+                                                    {
+                                                        sender.TCPSend(new EncryptedPrivateMessageCommandReceivedPacket(sender.EncryptString("The winner is..."),
+                                                            sender.EncryptString(pmReciever.guid.ToString())));
+                                                        pmReciever.TCPSend(new EncryptedPrivateMessageCommandReceivedPacket(pmReciever.EncryptString("The winner is..."),
+                                                            pmReciever.EncryptString(sender.guid.ToString())));
+                                                        Guid winner = game.GetWinner();
+                                                        string winMsg = "";
+                                                        if (winner == Guid.Empty)
+                                                            winMsg = "Nobody! It was a tie.";
+                                                        else
+                                                            winMsg = clientsByID[game.GetWinner()].nickname + "!";
+                                                        sender.TCPSend(new EncryptedPrivateMessageCommandReceivedPacket(sender.EncryptString(winMsg),
+                                                            sender.EncryptString(pmReciever.guid.ToString())));
+                                                        pmReciever.TCPSend(new EncryptedPrivateMessageCommandReceivedPacket(pmReciever.EncryptString(winMsg),
+                                                            pmReciever.EncryptString(sender.guid.ToString())));
+                                                        rpsGames.Remove(game);
+                                                    }
+                                                }
+                                            }
+                                        break;
+                                    case "/shrug":
+                                        pmReciever.TCPSend(new EncryptedPrivateMessageReceivedPacket(pmReciever.EncryptString(sender.nickname + ": " + "¯\\_(ツ)_/¯"), pmReciever.EncryptString(sender.guid.ToString())));
+                                        sender.TCPSend(new EncryptedPrivateMessageReceivedPacket(sender.EncryptString(sender.nickname + ": " + "¯\\_(ツ)_/¯"), sender.EncryptString(pmReciever.guid.ToString())));
+                                        break;
+                                    default:
+                                        sender.TCPSend(new EncryptedPrivateMessageCommandReceivedPacket(sender.EncryptString("Command not found"),
+                                            sender.EncryptString(pmReciever.guid.ToString())));
+                                        break;
+                                }
+                            }
+                            else
+                            {
+                                pmReciever.TCPSend(new EncryptedPrivateMessageReceivedPacket(pmReciever.EncryptString(sender.nickname + ": " + decryptedPrivateMessage), pmReciever.EncryptString(sender.guid.ToString())));
+                                sender.TCPSend(new EncryptedPrivateMessageReceivedPacket(sender.EncryptString(sender.nickname + ": " + decryptedPrivateMessage), sender.EncryptString(pmReciever.guid.ToString())));
+                            }
+                        }
                         break;
                     case PacketType.CLIENT_NAME_UPDATE:
                         ClientNameChangePacket nameChangePacket = (ClientNameChangePacket)packet;

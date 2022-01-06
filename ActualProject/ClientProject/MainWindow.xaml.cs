@@ -124,11 +124,7 @@ namespace ClientProject
                         client.UDPSend(new ChatMessagePacket(msg));
                 }
                 else
-                {
-                    client.MessageChannel(client.currentChannel, client.nickname + ": " + msg);
                     client.UDPSend(new EncryptedPrivateMessagePacket(client.EncryptString(msg), client.EncryptString(client.currentChannel.id.ToString())));
-
-                }
             }
         }
 
